@@ -51,21 +51,21 @@ defmodule WireFormat do
     |> repeat_while(name_part, :not_terminal)
     |> reduce({List, :to_string, []})
 
-  homeSymbol =
+  symbol_1 =
     name
     |> map({Symbol, :intern, [:lichat]})
   keyword =
     ignore(string(":"))
     |> concat(name)
     |> map({Symbol, :intern, [:keyword]})
-  fullSymbol =
+  symbol_2 =
     name
     |> ignore(string(":"))
     |> concat(name)
     |> wrap()
     |> map({Symbol, :intern, []})
   
-  symbol = choice([keyword, fullSymbol, homeSymbol])
+  symbol = choice([keyword, symbol_2, symbol_1])
 
   str_part = choice([
     ignore(string("\\")) |> concat(any),
