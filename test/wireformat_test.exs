@@ -40,6 +40,24 @@ defmodule WireFormatTest do
   end
 
   test "update parse" do
-    assert {:ok, [object], _, _, _, _} = WireFormat.update("(foo)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat}]} = WireFormat.update1("(foo)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat}]} = WireFormat.update1("(foo )")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat}]} = WireFormat.update1("( foo)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat},
+                  %Symbol{name: "bar", package: :keyword}, 0]} = WireFormat.update1("(foo :bar 0)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat},
+                  %Symbol{name: "bar", package: :keyword}, 0,
+                  %Symbol{name: "baz", package: :keyword}, 1]} = WireFormat.update1("(foo :bar 0 :baz 1)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat},
+                  %Symbol{name: "bar", package: :keyword}, "a"]} = WireFormat.update1("(foo :bar \"a\")")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat},
+                  %Symbol{name: "bar", package: :keyword},
+                  %Symbol{name: "a", package: :lichat}]} = WireFormat.update1("(foo :bar a)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat},
+                  %Symbol{name: "bar", package: :keyword},
+                  %Symbol{name: "a", package: :keyword}]} = WireFormat.update1("(foo :bar :a)")
+    assert {:ok, [%Symbol{name: "foo", package: :lichat},
+                  %Symbol{name: "bar", package: :keyword},
+                  %Symbol{name: "b", package: "a"}]} = WireFormat.update1("(foo :bar a:b)")
   end
 end

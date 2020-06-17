@@ -9,6 +9,14 @@ defmodule Symbol do
   def intern(name, package \\ :lichat) do
     %Symbol{name: name, package: package}
   end
+
+  def kw(name) do
+    %Symbol{name: name, package: :keyword}
+  end
+
+  def li(name) do
+    %Symbol{name: name, package: :lichat}
+  end
 end
 
 defmodule WireFormat do
@@ -115,16 +123,24 @@ defmodule WireFormat do
     ignore(string("("))
     |> ignore(repeat(white))
     |> concat(symbol)
+    |> ignore(repeat(white))
     |> repeat(object_part)
     |> ignore(string(")"))
     |> wrap()
 
-  defparsec :update, choice([object, any]) |> ignore(optional(utf8_char([0x0])))
+  defparsec :update, object |> ignore(optional(utf8_char([0x0])))
   
   def parse1(input) do
     case expr(input) do
       {:ok, [result], _, _, _, _} -> {:ok, result}
-      _ -> {:error}
+      x -> x
+    end
+  end
+
+  def update1(input) do
+    case update(input) do
+      {:ok, [result], _, _, _, _} -> {:ok, result}
+      x -> x
     end
   end
 end
