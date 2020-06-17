@@ -60,4 +60,21 @@ defmodule WireFormatTest do
                   %Symbol{name: "bar", package: :keyword},
                   %Symbol{name: "b", package: "a"}]} = WireFormat.update1("(foo :bar a:b)")
   end
+
+  test "printer" do
+    assert "0" == WireFormat.print1(0)
+    assert "0.0" == WireFormat.print1(0.0)
+    assert "\"a\"" == WireFormat.print1("a")
+    assert "\"\\\\a\"" == WireFormat.print1("\\a")
+    assert "\"\\\"a\"" == WireFormat.print1("\"a")
+    assert "a" == WireFormat.print1(Symbol.li("a"))
+    assert ":a" == WireFormat.print1(Symbol.kw("a"))
+    assert "b:a" == WireFormat.print1(Symbol.intern("a", "b"))
+    assert "()" == WireFormat.print1([])
+    assert "(0)" == WireFormat.print1([0])
+    assert "(\"a\")" == WireFormat.print1(["a"])
+    assert "(())" == WireFormat.print1([[]])
+    assert "(0 1)" == WireFormat.print1([0,1])
+    assert "(0 1 2)" == WireFormat.print1([0,1,2])
+  end
 end
