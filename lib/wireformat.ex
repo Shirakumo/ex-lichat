@@ -172,7 +172,18 @@ defmodule WireFormat do
       IO.write(stream, " ")
       list_(stream, [b|c])
     end
-    
+
+    def name_(_, <<>>) do end
+    def name_(stream, <<c, rest::binary>>) do
+      down = String.downcase(<<c>>)
+      if <<c>> == down do
+        IO.write(stream, <<?\\, c>>)
+      else
+        IO.write(stream, down)
+      end
+      name_(stream, rest)
+    end
+
     def print(stream, symbol) when is_struct(symbol) do
       case symbol.package do
         :keyword ->
@@ -180,10 +191,10 @@ defmodule WireFormat do
         :lichat ->
           nil
         package ->
-          IO.write(stream, package)
+          name_(stream, package)
           IO.write(stream, ":")
       end
-      IO.write(stream, symbol.name)
+      name_(stream, symbol.name)
     end
 
     def print(stream, string) when is_binary(string) do

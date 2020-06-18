@@ -10,7 +10,7 @@ defmodule Update do
   defmodule Message do defstruct channel: nil, text: nil end
 
   def type_symbol(update) do
-    Symbol.li(String.slice(Atom.to_string(update.type.__struct__), 7..-1))
+    Symbol.li(String.upcase(String.slice(Atom.to_string(update.type.__struct__), 14..-1)))
   end
 
   def make(from, type) do
