@@ -51,13 +51,22 @@ defmodule WireFormat do
       i
     end
 
+    defp parse_symbol("T"), do: true
+    defp parse_symbol("NIL"), do: false
+    defp parse_symbol(name), do: Symbol.li(name)
+
+    defp upcase_char(c) do
+      <<c>> = String.upcase(<<c>>)
+      c
+    end
+
     white = utf8_char([0x9, 0xA, 0xB, 0xC, 0xD, 0x20])
     
     any = utf8_char([not: 0x0])
 
     name_part = choice([
       ignore(string("\\")) |> concat(any),
-      utf8_char([])
+      utf8_char([]) |> map(:upcase_char)
     ])
     name =
       name_part
@@ -66,7 +75,7 @@ defmodule WireFormat do
 
     symbol_1 =
       name
-      |> map({Symbol, :intern, [:lichat]})
+      |> map(:parse_symbol)
     keyword =
       ignore(string(":"))
       |> concat(name)
@@ -195,6 +204,23 @@ defmodule WireFormat do
       IO.write(stream, "(")
       list_(stream, list)
       IO.write(stream, ")")
+    end
+
+    def print(stream, nil) do
+      IO.write(stream, "NIL")
+    end
+
+    def print(stream, false) do
+      IO.write(stream, "NIL")
+    end
+
+    def print(stream, true) do
+      IO.write(stream, "T")
+    end
+
+    def print(stream, atom) do
+      IO.write(stream, ":")
+      IO.write(stream, Atom.to_string(atom))
     end
   end
   
