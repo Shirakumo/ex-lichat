@@ -250,8 +250,9 @@ defmodule WireFormat do
   end
 
   def print1(input) do
-    {:ok, pid} = StringIO.open("")
-    Printer.print(pid, input)
-    StringIO.flush(pid)
+    {:ok, stream} = StringIO.open("")
+    Printer.print(stream, input)
+    IO.write(stream, <<0>>)
+    StringIO.flush(stream)
   end
 end

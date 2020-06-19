@@ -6,9 +6,24 @@ defmodule Toolkit do
   def id() do
     :ets.update_counter(__MODULE__, :lichatID, 1, {1, 0})
   end
+
+  def time() do
+    System.system_time(:second)
+  end
   
   def universal_time() do
     System.system_time(:second) + 2208985200
+  end
+
+  def config(key, default \\ nil) do
+    case Application.fetch_env(:lichat, key) do
+      :error -> default
+      {:ok, x} -> x
+    end
+  end
+
+  def config!(key) do
+    Application.fetch_env!(:lichat, key)
   end
 
   def getf!(plist, key) do

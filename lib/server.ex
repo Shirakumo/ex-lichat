@@ -7,11 +7,7 @@ defmodule Server do
   end
 
   @impl true
-  def init([port: port]) do
-    init([port: port, acceptors: 2])
-  end
-  
-  def init([port: port, acceptors: acceptors]) do
+  def init([port: port, acceptors: acceptors, supervisor: supervisor]) do
     tcp_options = [:binary, 
                    packet: :raw,
                    active: false, 
@@ -21,28 +17,17 @@ defmodule Server do
                    backlog: 500]
     {:ok, socket} = :gen_tcp.listen(port, tcp_options)
     children = Enum.map(1..acceptors, fn (i) ->
-      Supervisor.child_spec({Task, fn -> accept(socket) end}, id: {Task, i})
+      Supervisor.child_spec({Task, fn -> accept(supervisor, socket) end}, id: {Task, i})
     end)
     
     Logger.info("Accepting connections on port #{port}")
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-  defp accept(socket) do
+  defp accept(supervisor, socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(Connection.Supervisor, 
-      fn -> Connection.serve(client) end)
-    :ok = :gen_tcp.controlling_process(client, pid)
-    accept(socket)
-  end
-
-  def distribute(msg) do
-    distribute(msg, Task.Supervisor.children(Connection.Supervisor))
-  end
-
-  defp distribute(_msg, []) do end
-  defp distribute(msg, [pid | tail]) do
-    send pid, {:send, msg}
-    distribute(msg, tail)
+    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Connection, client})
+    :gen_tcp.controlling_process(client, pid)
+    accept(supervisor, socket)
   end
 end

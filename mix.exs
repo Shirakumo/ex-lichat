@@ -15,6 +15,10 @@ defmodule Lichat.MixProject do
   def application do
     [
       extra_applications: [:logger],
+      env: [profile_lifetime: 60*60*24*365,
+            acceptors: 2,
+            port: 1111,
+            name: "Lichat"],
       mod: {Lichat, []}
     ]
   end

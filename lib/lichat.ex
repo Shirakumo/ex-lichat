@@ -3,16 +3,20 @@ defmodule Lichat do
   use Application
 
   def protocol_version, do: "2.0"
+  def protocol_extensions, do: []
 
   @impl true
   def start(_type, _args) do
     Toolkit.init()
     
-    port = String.to_integer(System.get_env("PORT") || "1111")
-
     children = [
       {Task.Supervisor, name: Connection.Supervisor},
-      {Server, port: port}
+      {Profile, name: Profile},
+      {Registry, name: User, keys: :unique},
+      {Server,
+       port: Toolkit.config(:port, 1111),
+       acceptors: Toolkit.config(:acceptors, 2),
+       supervisor: Connection.Supervisor}
     ]
 
     opts = [strategy: :one_for_one, name: Lichat.Supervisor]

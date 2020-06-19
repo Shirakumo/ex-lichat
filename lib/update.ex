@@ -30,6 +30,20 @@ defmodule Update do
   def print(update) do
     WireFormat.print1(to_list(update))
   end
+
+  def make(type, args) do
+    id = Keyword.get_lazy(args, :id, &Toolkit.id/0)
+    clock = Keyword.get_lazy(args, :clock, &Toolkit.universal_time/0)
+    from = Keyword.fetch!(args, :from)
+    type = struct(type, Keyword.drop(args, [:id, :clock, :from]))
+    %Update{id: id, clock: clock, from: from, type: type}
+  end
+
+  def reply(update, type, args) do
+    args = Keyword.put_new(args, :from, update.from)
+    args = Keyword.put_new(args, :id, update.id)
+    make(type, args)
+  end
 end
 
 defimpl Update.Serialize, for: Any do
