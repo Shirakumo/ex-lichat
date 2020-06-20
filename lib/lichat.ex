@@ -13,6 +13,7 @@ defmodule Lichat do
       {Task.Supervisor, name: Connection.Supervisor},
       {Profile, name: Profile},
       {Registry, name: User, keys: :unique},
+      {Registry, name: Channel, keys: :unique},
       {Server,
        port: Toolkit.config(:port, 1111),
        acceptors: Toolkit.config(:acceptors, 2),
