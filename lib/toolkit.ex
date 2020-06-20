@@ -1,10 +1,16 @@
 defmodule Toolkit do
   def init() do
     :ets.new(__MODULE__, [:public, :named_table])
+    :ets.insert(__MODULE__, {:hashids, Hashids.new([salt: config(:salt, ""), min_len: 5])})
   end
   
   def id() do
     :ets.update_counter(__MODULE__, :lichatID, 1, {1, 0})
+  end
+
+  def hashid() do
+    [s] = :ets.lookup(__MODULE__, :hashids)
+    Hashids.encode(s, id())
   end
 
   def time() do

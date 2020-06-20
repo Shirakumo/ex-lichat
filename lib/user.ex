@@ -6,6 +6,13 @@ defmodule User do
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
+  
+  def get(registry, name) do
+    case Registry.lookup(registry, name) do
+      [] -> :error
+      [{pid, _}] -> {:ok, pid}
+    end
+  end
 
   def ensure_user(registry, name) do
     ## FIXME: Race condition here

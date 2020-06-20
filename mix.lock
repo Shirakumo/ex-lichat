@@ -1,3 +1,4 @@
 %{
+  "hashids": {:hex, :hashids, "2.0.4", "ea47a2c2018b7ffb4f5ac9b0f8ea0af6d6159b9e190c5ed09f0ea83276968e0f", [:mix], [], "hexpm", "812e2c7ae763609a47acdd4c64d58c72f63bcfd741e6c605127e43af1507e019"},
   "nimble_parsec": {:hex, :nimble_parsec, "0.6.0", "32111b3bf39137144abd7ba1cce0914533b2d16ef35e8abc5ec8be6122944263", [:mix], [], "hexpm", "27eac315a94909d4dc68bc07a4a83e06c8379237c5ea528a9acff4ca1c873c52"},
 }

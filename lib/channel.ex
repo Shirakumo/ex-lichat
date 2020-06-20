@@ -14,16 +14,25 @@ defmodule Channel do
     end
   end
 
+  def make(registry) do
+    name = anonymous_name()
+    case Channel.start_link([registry: registry, name: name]) do
+      {:ok, pid} -> {name, pid}
+      ## Not great...
+      _ -> make(registry)
+    end
+  end
+
   def ensure_channel(registry, name) do
     ## FIXME: Race condition here
     case Registry.lookup(registry, name) do
       [] ->
         {:ok, pid} = Channel.start_link([registry: registry, name: name])
         Logger.info("New channel at #{inspect(pid)}")
-        pid
+        {:new, pid}
       [{pid, _}] ->
         Logger.info("Existing channel at #{inspect(pid)}")
-        pid
+        {:old, pid}
     end
   end
 
@@ -95,5 +104,9 @@ defmodule Channel do
       nil -> nil
       x -> Toolkit.time() < x
     end
+  end
+
+  defp anonymous_name() do
+    <<?@>> <> Toolkit.hashid()
   end
 end
