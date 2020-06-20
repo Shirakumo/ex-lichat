@@ -40,6 +40,10 @@ defmodule User do
     GenServer.cast(user, {:send, update})
   end
 
+  def channels(user) do
+    GenServer.call(user, :channels)
+  end
+
   @impl true
   def init([registry: registry, name: name]) do
     {:ok, _} = Registry.register(registry, name, nil)
@@ -59,23 +63,18 @@ defmodule User do
   
   @impl true
   def handle_cast({:disconnect, from}, user) do
-    Process.demonitor(Map.get(user.connections, from))
-    connections = Map.delete(user.connections, from)
-    if Enum.empty?(connections) do
-      {:stop, "no more connections", %User{}}
-    else
-      {:noreply, %{user | connections: connections}}
-    end
+    handle_info({:down, Map.get(user.connections, from), :process, from, :disconnect}, user)
   end
 
   @impl true
   def handle_cast({:join, from}, user) do
-    {:noreply, %{user | channels: [ from | user.channels]}}
+    ref = Process.monitor(from)
+    {:noreply, %{user | channels: Map.put(user.channels, from, ref)}}
   end
 
   @impl true
   def handle_cast({:leave, from}, user) do
-    {:noreply, %{user | channels: List.delete(user.channels, from)}}
+    handle_info({:down, Map.get(user.channels, from), :process, from, :disconnect}, user)
   end
 
   @impl true
@@ -85,12 +84,14 @@ defmodule User do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, user) do
+  def handle_info({:down, ref, :process, pid, _reason}, user) do
+    Process.demonitor(ref)
     connections = Map.delete(user.connections, pid)
-    if Enum.empty?(connections) do
-      {:stop, "no more connections", %User{}}
+    channels = Map.delete(user.channels, pid)
+    if Enum.empty?(connections) or Enum.empty?(channels) do
+      {:stop, {:shutdown, "no more connections"}, %User{}}
     else
-      {:noreply, %{user | connections: connections, channels: Map.delete(user.channels, pid)}}
+      {:noreply, %{user | connections: connections, channels: channels}}
     end
   end
   
