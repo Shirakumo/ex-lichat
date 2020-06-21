@@ -1,11 +1,11 @@
 defmodule Update do
   defstruct id: nil, clock: nil, from: nil, type: %{}
-
+  @callback type_symbol() :: Symbol.t
+  
   ## Have to split here because protocols do not allow
   ## defimplementing only parts of it while falling back
   ## to defaults by Any on others, which sucks a lot.
   defprotocol Serialize do
-    def type_symbol(update)
     def to_list(update)
     def from_list(update, args)
   end
@@ -33,10 +33,16 @@ defmodule Update do
     
     quote do
       defmodule unquote(name) do
+        Module.register_attribute(unquote(name), :is_update?, persist: true)
+        @is_update? true
+        
+        @behaviour Update
+        @impl Update
+        def type_symbol, do: %Symbol{name: unquote(symbol), package: :lichat}
+        
         defstruct unquote(fielddefs)
         
         defimpl Update.Serialize, for: unquote(name) do
-          def type_symbol(_), do: %Symbol{name: unquote(symbol), package: :lichat}
           def to_list(type), do: unquote(to_fields)
           def from_list(_, args) do
             Update.from_list(%Update{},
@@ -54,35 +60,18 @@ defmodule Update do
   ## On the other hand, protocols also can't have other
   ## functions defined in them to use as helpers, so I guess
   ## now we can put parse/print in here again.
-  def type_symbol(update), do: Serialize.type_symbol(update)
+  def type_symbol(update), do: update.__struct__.type_symbol
   def from_list(input, args), do: Serialize.from_list(input, args)
   def to_list(update), do: Serialize.to_list(update)
 
-  ## This sucks lol
-  @updates %{
-    "PING" => Update.Ping,
-    "PONG" => Update.Pong,
-    "CONNECT" => Update.Connect,
-    "DISCONNECT" => Update.Disconnect,
-    "CREATE" => Update.Create,
-    "JOIN" => Update.Join,
-    "LEAVE" => Update.Leave,
-    "MESSAGE" => Update.Message}
-  
-  # def list() do
-  #   {:ok, mods} = :application.get_key(:lichat, :modules)
-  #   mods
-  #   |> Enum.filter(& &1 |> Module.has_attribute?(:update))
-  #   |> Enum.map(&{String.upcase(List.last(Module.split(&1))), &1})
-  # end
-
   def find_update(update_name) do
-    @updates[update_name]
+    ## TODO: cache list_types
+    Enum.find(list_types(), &(&1.type_symbol == update_name))
   end
   
   def from_list([type | args]) do
     if type.package == :lichat do
-      case find_update(type.name) do
+      case find_update(type) do
         nil -> raise "Unsupported update type #{type.name}"
         type -> Update.from_list(struct(type), args)
       end
@@ -119,6 +108,18 @@ defmodule Update do
     args = Keyword.put_new(args, :id, update.id)
     make(type, args)
   end
+
+  def is_update?(module) do
+    case Keyword.get(module.__info__(:attributes), :is_update?) do
+      [x] -> x
+      nil -> false
+    end
+  end
+
+  def list_types() do
+    {:ok, mods} = :application.get_key(:lichat, :modules)
+    Enum.filter(mods, &is_update?(&1))
+  end 
 end
 
 defimpl Update.Serialize, for: Any do
