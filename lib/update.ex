@@ -64,19 +64,19 @@ defmodule Update do
   def from_list(input, args), do: Serialize.from_list(input, args)
   def to_list(update), do: Serialize.to_list(update)
 
-  def find_update(update_name) do
+  def find_type(update_name) do
     ## TODO: cache list_types
     Enum.find(list_types(), &(&1.type_symbol == update_name))
   end
   
-  def from_list([type | args]) do
-    if type.package == :lichat do
-      case find_update(type) do
-        nil -> raise "Unsupported update type #{type.name}"
+  def from_list([symbol | args]) do
+    if symbol.package == :lichat do
+      case find_type(symbol) do
+        nil -> raise "Unsupported update #{inspect(symbol)}"
         type -> Update.from_list(struct(type), args)
       end
     else
-      raise "Unsupported update type #{type.name}"
+      raise "Unsupported update #{inspect(symbol)}"
     end
   end
 
