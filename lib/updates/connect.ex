@@ -1,25 +1,5 @@
-defmodule Update.Connect do
-  defstruct password: nil, version: nil, extensions: []
-end
-
-defimpl Update.Serialize, for: Update.Connect do
-  def type_symbol(_), do: %Symbol{name: "CONNECT", package: :lichat}
-  def to_list(type) do
-    [ :password, type.password,
-      :version, type.version,
-      :extensions, type.extensions ]
-  end
-  def from_list(_, args) do
-    Update.from_list(%Update{},
-      [ :type, %Update.Connect{
-          password: Toolkit.getf(args, :password),
-          version: Toolkit.getf!(args, :version),
-          extensions: Toolkit.getf(args, :extensions)}
-        | args ])
-  end
-end
-
-defimpl Update.Execute, for: Update.Connect do
+use Update
+defupdate(Connect, "CONNECT", [:password, :version, :extensions]) do
   def handle(type, update, connection) do
     case connection.state do
       nil ->

@@ -13,6 +13,44 @@ defmodule Update do
     def handle(type, update, connection)
   end
 
+  defmacro __using__(_) do
+    quote do
+      import Update, only: [defupdate: 4]
+    end
+  end
+
+  defmacro defupdate(name, symbol, fields, do: execute) do
+    name = Module.concat(Update, Macro.expand(name, __ENV__))
+    fields = Enum.map(fields, fn(x) ->
+      case x do
+        {field, symbol} -> {field, symbol}
+        field -> {field, field}
+      end
+    end)
+    fielddefs = Enum.map(fields, fn({x, _})->{x, nil} end)
+    to_fields = Enum.flat_map(fields, fn({x, y})->[x, quote(do: Map.get(type, unquote(y)))] end)
+    from_fields = Enum.map(fields, fn({x, y})->{x, quote(do: Toolkit.getf!(args, unquote(y)))} end)
+    
+    quote do
+      defmodule unquote(name) do
+        defstruct unquote(fielddefs)
+        
+        defimpl Update.Serialize, for: unquote(name) do
+          def type_symbol(_), do: %Symbol{name: unquote(symbol), package: :lichat}
+          def to_list(type), do: unquote(to_fields)
+          def from_list(_, args) do
+            Update.from_list(%Update{},
+              [ :type, struct(unquote(name), unquote(from_fields)) | args ])
+          end
+        end
+        
+        defimpl Update.Execute, for: unquote(name) do
+          unquote(execute)
+        end
+      end
+    end
+  end
+
   ## On the other hand, protocols also can't have other
   ## functions defined in them to use as helpers, so I guess
   ## now we can put parse/print in here again.
