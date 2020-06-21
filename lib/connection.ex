@@ -41,14 +41,14 @@ defmodule Connection do
   def establish(state, update) do
     Logger.info("Connect #{inspect(update)}")
     User.connect(User.ensure_user(User, update.from), self())
-    write(state, Update.reply(update, Updates.Connect, [
+    write(state, Update.reply(update, Update.Connect, [
               version: Lichat.protocol_version(),
               extensions: Lichat.protocol_extensions()]))
     %{state | state: :connected}
   end
 
   def close(state) do
-    write(state, Update.make(Updates.Disconnect, [
+    write(state, Update.make(Update.Disconnect, [
               from: Toolkit.config(:name)
             ]))
     :gen_tcp.shutdown(state.socket, :write)

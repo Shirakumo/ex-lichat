@@ -175,11 +175,10 @@ defmodule WireFormat do
 
     def name_(_, <<>>) do end
     def name_(stream, <<c, rest::binary>>) do
-      down = String.downcase(<<c>>)
-      if <<c>> == down do
+      if <<c>> != String.upcase(<<c>>) do
         IO.write(stream, <<?\\, c>>)
       else
-        IO.write(stream, down)
+        IO.write(stream, String.downcase(<<c>>))
       end
       name_(stream, rest)
     end

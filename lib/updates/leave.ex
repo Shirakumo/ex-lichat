@@ -7,10 +7,10 @@ defupdate(Leave, "LEAVE", [:channel]) do
           Channel.write(channel, update)
           User.leave(state.user, channel)
         else
-          nil # Connection.write(state, %NotInChannel)
+          Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
       :error ->
-        nil # Connection.write(state, %NoSuchChannel)
+        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

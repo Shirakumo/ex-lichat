@@ -15,21 +15,37 @@ defmodule Update do
 
   defmacro __using__(_) do
     quote do
-      import Update, only: [defupdate: 4]
+      import Update, only: [defupdate: 3, defupdate: 4]
     end
+  end
+
+  defmacro defupdate(name, symbol, fields) do
+    quote do defupdate(unquote(name), unquote(symbol), unquote(fields)) do
+            def handle(_, _, state), do: state
+      end end
   end
 
   defmacro defupdate(name, symbol, fields, do: execute) do
     name = Module.concat(Update, Macro.expand(name, __ENV__))
     fields = Enum.map(fields, fn(x) ->
       case x do
-        {field, symbol} -> {field, symbol}
-        field -> {field, field}
+        [field | args] -> {field, Keyword.get(args, :symbol, field), Keyword.get(args, :default), Keyword.get(args, :required)}
+        field -> {field, field, nil, true}
       end
     end)
-    fielddefs = Enum.map(fields, fn({x, _})->{x, nil} end)
-    to_fields = Enum.flat_map(fields, fn({x, y})->[x, quote(do: Map.get(type, unquote(y)))] end)
-    from_fields = Enum.map(fields, fn({x, y})->{x, quote(do: Toolkit.getf!(args, unquote(y)))} end)
+    fielddefs = Enum.map(fields, fn({x, _, d, _})->
+      {x, d}
+    end)
+    to_fields = Enum.flat_map(fields, fn({x, y, _, _})->
+      [x, quote(do: Map.get(type, unquote(y)))]
+    end)
+    from_fields = Enum.map(fields, fn({x, y, _, r})->
+      {x, if r do
+            quote(do: Toolkit.getf!(args, unquote(y)))
+          else
+            quote(do: Toolkit.getf(args, unquote(y)))
+          end}
+    end)
     
     quote do
       defmodule unquote(name) do
@@ -98,7 +114,7 @@ defmodule Update do
   def make(type, args) do
     id = Keyword.get_lazy(args, :id, &Toolkit.id/0)
     clock = Keyword.get_lazy(args, :clock, &Toolkit.universal_time/0)
-    from = Keyword.fetch!(args, :from)
+    from = Keyword.get_lazy(args, :from, fn->Toolkit.config!(:name)end)
     type = struct(type, Keyword.drop(args, [:id, :clock, :from]))
     %Update{id: id, clock: clock, from: from, type: type}
   end
@@ -107,6 +123,14 @@ defmodule Update do
     args = Keyword.put_new(args, :from, update.from)
     args = Keyword.put_new(args, :id, update.id)
     make(type, args)
+  end
+
+  def fail(update, type) do
+    make(type, [update_id: update.id])
+  end
+  
+  def fail(update, type, message) do
+    make(type, [update_id: update.id, text: message])
   end
 
   def is_update?(module) do

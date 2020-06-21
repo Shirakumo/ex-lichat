@@ -6,10 +6,10 @@ defupdate(Message, "MESSAGE", [:channel, :text]) do
         if User.in_channel?(state.user, channel) do
           Channel.write(channel, update)
         else
-          nil # Connection.write(state, %NotInChannel)
+          Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
       :error ->
-        nil # Connection.write(state, %NoSuchChannel)
+        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end
