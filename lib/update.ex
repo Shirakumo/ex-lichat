@@ -88,17 +88,17 @@ defmodule Update do
   def from_list([symbol | args]) do
     if symbol.package == :lichat do
       case find_type(symbol) do
-        nil -> raise "Unsupported update #{inspect(symbol)}"
+        nil -> raise UnsupportedUpdate, symbol: symbol
         type -> Update.from_list(struct(type), args)
       end
     else
-      raise "Unsupported update #{inspect(symbol)}"
+      raise UnsupportedUpdate, symbol: symbol
     end
   end
 
   def parse(input) do
     case WireFormat.update1(input) do
-      {:error, msg, _, _, _, _} -> raise msg
+      {:error, msg, _, _, _, _} -> raise Error.ParseFailure, message: msg
       {:ok, update} -> from_list(update)
     end
   end
@@ -125,12 +125,20 @@ defmodule Update do
     make(type, args)
   end
 
-  def fail(update, type) do
+  def fail(type) do
+    make(type, [from: Toolkit.config(:name)])
+  end
+
+  def fail(type, message) do
+    make(type, [from: Toolkit.config(:name), text: message])
+  end
+
+  def fail(update, type) when is_struct(update) do
     make(type, [update_id: update.id])
   end
   
-  def fail(update, type, message) do
-    make(type, [update_id: update.id, text: message])
+  def fail(update, type, message) when is_struct(update) do
+    make(type, [update_id: update.id, from: Toolkit.config(:name), text: message])
   end
 
   def is_update?(module) do

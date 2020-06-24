@@ -16,18 +16,27 @@ defmodule Connection do
         state = %{state | socket: socket}
         Logger.info("> #{data}")
         try do
-          run(Update.handle(Update.parse(data), state))
+          update = Update.parse(data)
+          try do
+            run(Update.handle(update, state))
+          rescue
+            RuntimeError ->
+              write(state, Update.fail(update, Update.UpdateFailure))
+              run(state)
         rescue
-          e in RuntimeError ->
-            Logger.info("Error #{inspect(e)}")
+          ParseFailure ->
+            write(state, Update.fail(Update.MalformedUpdate))
+            run(state)
+          UnsupportedUpdate ->
+            write(state, Update.fail(Update.InvalidUpdate))
             run(state)
         end
       {:tcp_closed, _} ->
-        Logger.info("TCP closed")
-        :done
+        Logger.info("TCP closed #{inspect(state.user)}")
+        %{state | state: :closed}
       {:tcp_error, _} ->
-        Logger.info("TCP error")
-        :failed
+        Logger.info("TCP error #{inspect(state.user)}")
+        %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
         run(state)
