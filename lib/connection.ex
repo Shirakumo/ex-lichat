@@ -13,16 +13,30 @@ defmodule Connection do
       {:tcp, socket, data} ->
         # TODO: Reconstruct full updates from partial data,
         #       skip on length exceed or broken update, etc.
+        #       Check permissions for user
         state = %{state | socket: socket}
         Logger.info("> #{data}")
         try do
           update = Update.parse(data)
           try do
-            run(Update.handle(update, state))
+            case state.state do
+              nil ->
+                if update.type == Update.Connect do
+                  run(Update.handle(update, state))
+                else
+                  write(state, Update.fail(Update.InvalidUpdate))
+                  close(state)
+                end
+              :closed ->
+                close(state)
+              _ ->
+                run(Update.handle(update, state))
+            end
           rescue
             RuntimeError ->
               write(state, Update.fail(update, Update.UpdateFailure))
-              run(state)
+            run(state)
+          end
         rescue
           ParseFailure ->
             write(state, Update.fail(Update.MalformedUpdate))
