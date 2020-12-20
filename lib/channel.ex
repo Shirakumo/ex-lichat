@@ -36,6 +36,10 @@ defmodule Channel do
     end
   end
 
+  def list(registry) do
+    Registry.keys(registry, self())
+  end
+
   def join(channel) do
     GenServer.cast(channel, {:join, self()})
   end
