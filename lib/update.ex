@@ -129,12 +129,12 @@ defmodule Update do
     make(type, [from: Toolkit.config(:name)])
   end
 
-  def fail(type, message) do
-    make(type, [from: Toolkit.config(:name), text: message])
-  end
-
   def fail(update, type) when is_struct(update) do
     make(type, [update_id: update.id])
+  end
+
+  def fail(type, message) do
+    make(type, [from: Toolkit.config(:name), text: message])
   end
   
   def fail(update, type, message) when is_struct(update) do
