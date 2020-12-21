@@ -21,7 +21,17 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
               Connection.write(connection, Update.fail(update, Update.InvalidPassword))
               Connection.close(connection)
             :ok ->
-              Connection.establish(connection, update)
+              case User.get(User, update.from) do
+                :error ->
+                  Connection.establish(connection, update)
+                {:ok, user} ->
+                  if Enum.count(User.connections(user)) < Toolkit.config(:max_connections_per_user, 20) do
+                    Connection.establish(connection, update)
+                  else
+                    Connection.write(connection, Update.fail(update, Update.TooManyConnections))
+                    Connection.close(connection)
+                  end
+              end
           end
           _ ->
             Connection.write(connection, Update.fail(update, Update.AlreadyConnected))

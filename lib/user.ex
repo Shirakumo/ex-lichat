@@ -51,6 +51,10 @@ defmodule User do
     GenServer.call(user, :channels)
   end
 
+  def connections(user) do
+    GenServer.call(user, :connections)
+  end
+
   def in_channel?(user, channel) do
     GenServer.call(user, {:in_channel?, channel})
   end
@@ -64,6 +68,11 @@ defmodule User do
   @impl true
   def handle_call(:channels, _from, user) do
     {:reply, user.channels, user}
+  end
+
+  @impl true
+  def handle_call(:connections, _from, user) do
+    {:reply, user.connections, user}
   end
 
   @impl true
