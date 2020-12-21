@@ -2,8 +2,15 @@ defmodule Lichat do
   require Logger
   use Application
 
-  def protocol_version, do: "2.0"
-  def protocol_extensions, do: []
+  def version, do: "2.0"
+
+  def compatible_versions, do: [ "2.0", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0" ]
+
+  def extensions, do: ["shirakumo-data"]
+  
+  def compatible?(version) do
+    Enum.member?(compatible_versions(), version)
+  end
 
   @impl true
   def start(_type, _args) do

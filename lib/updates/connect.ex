@@ -33,15 +33,15 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                   end
               end
           end
-          _ ->
-            Connection.write(connection, Update.fail(update, Update.AlreadyConnected))
-            connection
         else
           Connection.write(connection, Update.fail(update, Update.IncompatibleVersion, [
-                    compatible_versions: Version.compatible_versions()
+                    compatible_versions: Lichat.compatible_versions()
                   ]))
           Connection.close(connection)
         end
+      _ ->
+        Connection.write(connection, Update.fail(update, Update.AlreadyConnected))
+        connection
     end
   end
 end
