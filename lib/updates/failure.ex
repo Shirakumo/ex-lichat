@@ -68,4 +68,4 @@ defupdate TooManyUpdates, "TOO-MANY-UPDATES",
 defupdate BadContentType, "BAD-CONTENT-TYPE",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "Content of the given type is not accepted by this server."],
-   [:allowed_content_types, symbol: "ALLOWED_CONTENT_TYPES"]]
+   [:allowed_content_types, symbol: "ALLOWED-CONTENT-TYPES"]]
