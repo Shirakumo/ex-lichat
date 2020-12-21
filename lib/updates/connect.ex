@@ -3,7 +3,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
   def handle(type, update, connection) do
     case connection.state do
       nil ->
-        if Version.compatible?(update.version) do
+        if Lichat.compatible?(update.version) do
           profile = %Profile{name: update.from, password: type.password}
           case Profile.check(Profile, profile) do
             :not_registered ->
