@@ -20,7 +20,8 @@ defmodule Emote do
         Agent.update(server, fn(_) -> emotes end)
         emotes
       {:error, reason} ->
-        Logger.error("Failed to reload emotes: #{reason}")
+        error = :file.format_error(reason)
+        Logger.error("Failed to reload emotes: #{error}")
         []
     end
   end

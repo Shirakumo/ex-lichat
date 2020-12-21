@@ -1,4 +1,5 @@
 defmodule Profile do
+  require Logger
   use Agent
   defstruct name: nil, password: nil, expiry: nil, hashed: false
 
@@ -12,11 +13,15 @@ defmodule Profile do
   end
 
   def reload(server) do
+    Logger.info("Reloading profiles")
     case File.read("profiles.dat") do
       {:ok, content} ->
         map = :erlang.binary_to_term(content)
         Agent.update(server, fn(_) -> map end)
-      x -> x
+      {:error, reason} ->
+        error = :file.format_error(reason)
+        Logger.error("Failed to load profiles: #{error}")
+        {:error, reason}
     end
   end
 
