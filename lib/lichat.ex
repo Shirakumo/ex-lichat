@@ -19,6 +19,7 @@ defmodule Lichat do
     children = [
       {Task.Supervisor, name: Connection.Supervisor},
       {Profile, name: Profile},
+      {Emote, name: Emote},
       {Registry, name: User, keys: :unique},
       {Registry, name: Channel, keys: :unique},
       {Server,

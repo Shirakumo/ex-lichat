@@ -27,7 +27,8 @@ defmodule Lichat.MixProject do
   defp deps do
     [
       {:nimble_parsec, "~> 0.6"},
-      {:hashids, "~> 2.0"}
+      {:hashids, "~> 2.0"},
+      {:mime, "~> 1.2"}
     ]
   end
 end
