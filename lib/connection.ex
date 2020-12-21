@@ -65,8 +65,8 @@ defmodule Connection do
     Logger.info("Connect #{inspect(update)}")
     User.connect(User.ensure_user(User, update.from), self())
     write(state, Update.reply(update, Update.Connect, [
-              version: Lichat.protocol_version(),
-              extensions: Lichat.protocol_extensions()]))
+              version: Version.get(),
+              extensions: Version.extensions()]))
     %{state | state: :connected}
   end
 
