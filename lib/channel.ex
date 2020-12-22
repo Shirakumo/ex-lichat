@@ -52,16 +52,16 @@ defmodule Channel do
     GenServer.cast(channel, {:send, update})
   end
   
+  def update(channel, permissions) do
+    GenServer.cast(channel, {:permissions, permissions})
+  end
+  
   def users(channel) do
     GenServer.call(channel, :users)
   end
   
   def permissions(channel) do
     GenServer.call(channel, :permissions)
-  end
-  
-  def update(channel, permissions) do
-    GenServer.cast(channel, {:permissions, permissions})
   end
   
   @impl true
@@ -85,6 +85,24 @@ defmodule Channel do
   def handle_cast({:send, update}, channel) do
     Enum.each(Map.keys(channel.users), &User.write(&1, update))
     {:noreply, channel}
+  end
+
+  @impl true
+  def handle_cast({:permissions, rules}, channel) do
+    perms = Enum.into(rules, channel.permissions, fn [type, perm] ->
+      {type, compile_rule(perm)}
+    end)
+    {:noreply, %{channel | permissions: perms}}
+  end
+
+  @impl true
+  def handle_call(:users, _from, channel) do
+    {:reply, channel.users, channel}
+  end
+
+  @impl true
+  def handle_call(:permissions, _from, channel) do
+    {:reply, Enum.map(channel.permissions, fn {type, rule} -> [type, decompile_rule(rule)] end), channel}
   end
 
   @impl true
@@ -112,5 +130,32 @@ defmodule Channel do
 
   defp anonymous_name() do
     <<?@>> <> Toolkit.hashid()
+  end
+
+  defp compile_rule(:true) do
+    %{:default => true}
+  end
+
+  defp compile_rule(:false) do
+    %{:default => false}
+  end
+
+  defp compile_rule([symbol | names]) do
+    case symbol.name do
+      "+" -> Map.put(Map.new(names, fn n -> {n, true} end), :default, false)
+      "-" -> Map.put(Map.new(names, fn n -> {n, false} end), :default, true)
+    end
+  end
+
+  defp decompile_rule(rule) do
+    {default, rule} = Map.pop!(rule, :default)
+    cond do
+      Enum.count(rule) == 0 ->
+        default
+      default == true ->
+        [Symbol.li("-") | Enum.map(rule, fn {k, _} -> k end)]
+      true ->
+        [Symbol.li("+") | Enum.map(rule, fn {k, _} -> k end)]
+    end
   end
 end

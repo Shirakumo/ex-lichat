@@ -6,7 +6,7 @@ defupdate(Register, "REGISTER", [:password]) do
         Connection.write(state, update)
       {:error, reason} ->
         Connection.write(state, Update.fail(update, Update.RegistrationRejected, [
-                text: reason )))
+                text: reason ]))
     end
     state
   end
