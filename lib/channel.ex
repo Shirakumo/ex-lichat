@@ -1,7 +1,7 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, permissions: %{}, users: %{}, expiry: 0
+  defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, expiry: 0
   
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -36,6 +36,14 @@ defmodule Channel do
     end
   end
 
+  def valid_info(symbol) do
+    symbol.package == :keyword and Enum.member?(["NEWS", "TOPIC", "RULES", "CONTACT"], symbol.name)
+  end
+
+  def valid_info(symbol, value) do
+    valid_info(symbol) and is_binary(value)
+  end
+
   def list(registry) do
     Registry.keys(registry, self())
   end
@@ -62,6 +70,18 @@ defmodule Channel do
   
   def permissions(channel) do
     GenServer.call(channel, :permissions)
+  end
+
+  def info(channel) do
+    GenServer.call(channel, :info)
+  end
+
+  def info(channel, key) do
+    GenServer.call(channel, {:info, key})
+  end
+
+  def info(channel, key, value) do
+    GenServer.cast(channel, {:info, key, value})
   end
   
   @impl true
@@ -96,6 +116,11 @@ defmodule Channel do
   end
 
   @impl true
+  def handle_cast({:info, key, value}, channel) do
+    {:noreply, %{channel | meta: Map.put(channel.meta, key, value)}}
+  end
+
+  @impl true
   def handle_call(:users, _from, channel) do
     {:reply, channel.users, channel}
   end
@@ -103,6 +128,16 @@ defmodule Channel do
   @impl true
   def handle_call(:permissions, _from, channel) do
     {:reply, Enum.map(channel.permissions, fn {type, rule} -> [type, decompile_rule(rule)] end), channel}
+  end
+
+  @impl true
+  def handle_call(:info, _from, channel) do
+    {:reply, channel.meta, channel}
+  end
+
+  @impl true
+  def handle_call({:info, key}, _from, channel) do
+    {:reply, channel.meta[key], channel}
   end
 
   @impl true
