@@ -109,8 +109,8 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:permissions, rules}, channel) do
-    perms = Enum.into(rules, channel.permissions, fn [type, perm] ->
-      {type, compile_rule(perm)}
+    perms = Enum.into(rules, channel.permissions, fn [type_symbol, perm] ->
+      {Update.find_type(type_symbol), compile_rule(perm)}
     end)
     {:noreply, %{channel | permissions: perms}}
   end
@@ -127,7 +127,7 @@ defmodule Channel do
 
   @impl true
   def handle_call(:permissions, _from, channel) do
-    {:reply, Enum.map(channel.permissions, fn {type, rule} -> [type, decompile_rule(rule)] end), channel}
+    {:reply, Enum.map(channel.permissions, fn {type, rule} -> [apply(type, :type_symbol, []), decompile_rule(rule)] end), channel}
   end
 
   @impl true
