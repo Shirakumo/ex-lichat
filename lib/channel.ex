@@ -60,7 +60,8 @@ defmodule Channel do
   end
 
   def primary(registry) do
-    get(registry, Lichat.server_name())
+    {:ok, primary} = get(registry, Lichat.server_name())
+    primary
   end
 
   def make(registry) do

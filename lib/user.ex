@@ -19,8 +19,8 @@ defmodule User do
     case Registry.lookup(registry, name) do
       [] ->
         {:ok, pid} = User.start_link([registry: registry, name: name])
-        join(pid, Channel.primary(Channel))
         Logger.info("New user #{name} at #{inspect(pid)}")
+        join(pid, Channel.primary(Channel))
         pid
       [{pid, _}] ->
         Logger.info("Existing user #{name} at #{inspect(pid)}")

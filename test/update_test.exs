@@ -3,7 +3,7 @@ defmodule UpdateTest do
   doctest Update
   
   test "parse" do
-    assert_raise RuntimeError, fn->Update.parse("()") end
+    assert_raise Error.ParseFailure, fn->Update.parse("()") end
     assert_raise RuntimeError, fn->Update.parse("(ping)") end
     assert %Update{id: 0, clock: 0, from: "", type: %Update.Ping{}}
     == Update.parse("(ping :id 0 :clock 0 :from \"\")")
