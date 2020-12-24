@@ -19,32 +19,38 @@ defmodule User do
     case Registry.lookup(registry, name) do
       [] ->
         {:ok, pid} = User.start_link([registry: registry, name: name])
-        Logger.info("New user at #{inspect(pid)}")
+        join(pid, Channel.primary(Channel))
+        Logger.info("New user #{name} at #{inspect(pid)}")
         pid
       [{pid, _}] ->
-        Logger.info("Existing user at #{inspect(pid)}")
+        Logger.info("Existing user #{name} at #{inspect(pid)}")
         pid
     end
   end
 
   def connect(user, connection) do
     GenServer.cast(user, {:connect, connection})
+    user
   end
 
   def disconnect(user, connection) do
     GenServer.cast(user, {:disconnect, connection})
+    user
   end
 
   def join(user, channel) do
     GenServer.cast(user, {:join, channel})
+    user
   end
 
   def leave(user, channel) do
     GenServer.cast(user, {:leave, channel})
+    user
   end
 
   def write(user, update) do
     GenServer.cast(user, {:send, update})
+    user
   end
 
   def channels(user) do

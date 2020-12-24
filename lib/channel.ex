@@ -2,6 +2,51 @@ defmodule Channel do
   require Logger
   use GenServer
   defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, expiry: 0
+
+  def default_channel_permissions, do: Map.new([
+        {Update.Permissions, :registrant},
+        {Update.Join, true},
+        {Update.Leave, true},
+        {Update.Kick, :registrant},
+        {Update.Pull, true},
+        {Update.Message, true},
+        {Update.Users, true},
+        {Update.Channels, true},
+        {Update.Data, true},
+        {Update.Edit, true},
+        {Update.ChannelInfo, true},
+        {Update.SetChannelInfo, :registrant}])
+
+  def default_anonymous_channel_permissions, do: Map.new([
+        {Update.Permissions, false},
+        {Update.Join, false},
+        {Update.Leave, true},
+        {Update.Kick, :registrant},
+        {Update.Pull, true},
+        {Update.Message, true},
+        {Update.Users, false},
+        {Update.Channels, false},
+        {Update.Data, true},
+        {Update.Edit, true},
+        {Update.ChannelInfo, false},
+        {Update.SetChannelInfo, false}])
+
+  def default_primary_channel_permissions, do: Map.new([
+        {Update.Permissions, :registrant},
+        {Update.Create, true},
+        {Update.Join, true},
+        {Update.Leave, false},
+        {Update.Kick, :registrant},
+        {Update.Pull, false},
+        {Update.Message, :registrant},
+        {Update.Users, true},
+        {Update.Channels, true},
+        {Update.Data, :registrant},
+        {Update.Edit, :registrant},
+        {Update.Emotes, true},
+        {Update.Emote, :registrant},
+        {Update.ChannelInfo, true},
+        {Update.SetChannelInfo, :registrant}])
   
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -14,9 +59,13 @@ defmodule Channel do
     end
   end
 
+  def primary(registry) do
+    get(registry, Lichat.server_name())
+  end
+
   def make(registry) do
     name = anonymous_name()
-    case Channel.start_link([registry: registry, name: name]) do
+    case Channel.start_link([registry: registry, name: name, permissions: default_anonymous_channel_permissions()]) do
       {:ok, pid} -> {name, pid}
       ## Not great...
       _ -> make(registry)
@@ -24,14 +73,18 @@ defmodule Channel do
   end
 
   def ensure_channel(registry, name) do
+    ensure_channel(registry, name, default_channel_permissions())
+  end
+
+  def ensure_channel(registry, name, permissions) do
     ## FIXME: Race condition here
     case Registry.lookup(registry, name) do
       [] ->
-        {:ok, pid} = Channel.start_link([registry: registry, name: name])
-        Logger.info("New channel at #{inspect(pid)}")
+        {:ok, pid} = Channel.start_link([registry: registry, name: name, permissions: permissions])
+        Logger.info("New channel #{name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
-        Logger.info("Existing channel at #{inspect(pid)}")
+        Logger.info("Existing channel #{name} at #{inspect(pid)}")
         {:old, pid}
     end
   end
@@ -49,7 +102,7 @@ defmodule Channel do
       {:ok, rule} ->
         Map.get_lazy(rule, String.downcase(update.from), fn -> Map.fetch!(rule, :default) end)
       :error ->
-        :error
+        permitted?(Channel.primary(Channel), update)
     end
   end
 
@@ -63,18 +116,22 @@ defmodule Channel do
 
   def join(channel) do
     GenServer.cast(channel, {:join, self()})
+    channel
   end
   
   def leave(channel) do
     GenServer.cast(channel, {:leave, self()})
+    channel
   end
   
   def write(channel, update) do
     GenServer.cast(channel, {:send, update})
+    channel
   end
   
   def update(channel, permissions) do
     GenServer.cast(channel, {:permissions, permissions})
+    channel
   end
   
   def users(channel) do
@@ -95,12 +152,13 @@ defmodule Channel do
 
   def info(channel, key, value) do
     GenServer.cast(channel, {:info, key, value})
+    channel
   end
   
   @impl true
-  def init([registry: registry, name: name]) do
+  def init([registry: registry, name: name, permissions: permissions]) do
     {:ok, _} = Registry.register(registry, name, nil)
-    {:ok, %Channel{name: name}}
+    {:ok, %Channel{name: name, permissions: permissions}}
   end
   
   @impl true

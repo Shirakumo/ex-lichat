@@ -12,6 +12,8 @@ defmodule Lichat do
     Enum.member?(compatible_versions(), version)
   end
 
+  def server_name, do: Toolkit.config(:server_name, "Lichat")
+
   @impl true
   def start(_type, _args) do
     Toolkit.init()
@@ -29,6 +31,11 @@ defmodule Lichat do
     ]
 
     opts = [strategy: :one_for_one, name: Lichat.Supervisor]
-    Supervisor.start_link(children, opts)
+    pid = Supervisor.start_link(children, opts)
+
+    Channel.ensure_channel(Channel, server_name(), Channel.default_primary_channel_permissions())
+    User.ensure_user(User, server_name())
+    
+    pid
   end
 end
