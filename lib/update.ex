@@ -195,8 +195,8 @@ defimpl Update.Serialize, for: Update do
   def from_list(_, args) do
     %Update{
       id: Update.getf!(args, :id),
-      clock: Update.getf!(args, :clock),
-      from: Update.getf!(args, :from),
+      clock: Toolkit.getf(args, :clock, Toolkit.universal_time()),
+      from: Toolkit.getf(args, :from),
       type: Update.getf!(args, :type)}
   end
 end

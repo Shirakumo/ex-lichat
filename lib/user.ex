@@ -6,6 +6,18 @@ defmodule User do
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
+
+  defp generate_name() do
+    suffix = for _ <- 1..8, into: '', do: Enum.random('abcdefghijklmnopqrstuvwxyz0123456789')
+    IO.iodata_to_binary([ "Random User " | suffix ])
+  end
+
+  def random_name(registry) do
+    ["Lichatter", "Random Guy", "Randy", "Chatty", "Rando", "Hoot"]
+    |> Stream.concat(Stream.repeatedly(&generate_name/0))
+    |> Stream.filter(&(get(registry, &1) == :error))
+    |> Enum.fetch!(0)
+  end
   
   def get(registry, name) do
     case Registry.lookup(registry, name) do

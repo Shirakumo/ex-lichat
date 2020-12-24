@@ -30,6 +30,10 @@ defmodule Connection do
               :closed ->
                 close(state)
               _ ->
+                update = case update.from do
+                           nil -> %{update | from: state.user.name}
+                           _ -> update
+                         end
                 cond do
                   update.from != state.user.name ->
                     write(state, Update.fail(update, Update.UsernameMismatch))
