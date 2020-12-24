@@ -3,15 +3,15 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
   def handle(type, update, connection) do
     case connection.state do
       nil ->
-        if Lichat.compatible?(update.version) do
-          profile = %Profile{name: update.from, password: type.password}
+        if Lichat.compatible?(type.version) do
+          profile = %Profile{name: type.from, password: type.password}
           case Profile.check(Profile, profile) do
             :not_registered ->
               cond do
                 type.password != nil ->
                   Connection.write(connection, Update.fail(update, Update.NoSuchProfile))
                   Connection.close(connection)
-                User.get(User, update.from) != :error ->
+                User.get(User, type.from) != :error ->
                   Connection.write(connection, Update.fail(update, Update.UsernameTaken))
                   Connection.close(connection)
                 true ->
@@ -21,7 +21,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
               Connection.write(connection, Update.fail(update, Update.InvalidPassword))
               Connection.close(connection)
             :ok ->
-              case User.get(User, update.from) do
+              case User.get(User, type.from) do
                 :error ->
                   Connection.establish(connection, update)
                 {:ok, user} ->

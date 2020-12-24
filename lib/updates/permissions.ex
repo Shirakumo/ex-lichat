@@ -3,11 +3,11 @@ defupdate(Permissions, "PERMISSIONS", [:channel, [:permissions, required: false]
   def handle(type, update, state) do
     case Channel.get(Channel, type.channel) do
       {:ok, channel} ->
-        if update.permissions != nil do
-          Channel.update(channel, update.permissions)
+        if type.permissions != nil do
+          Channel.update(channel, type.permissions)
         end
         Connection.write(state, Update.reply(update, Update.Permissions, [
-                  channel: update.channel,
+                  channel: type.channel,
                   permissions: Channel.permissions(channel)
                 ]))
       :error ->

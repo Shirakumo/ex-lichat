@@ -4,12 +4,12 @@ defupdate(SetChannelInfo, "SET-CHANNEL-INFO", [:channel, :key, :text]) do
     case Channel.get(Channel, type.channel) do
       {:ok, channel} ->
         cond do
-          not Channel.valid_info(update.key) ->
-            Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: update.key]))
-          not Channel.valid_info(update.key, update.value) ->
+          not Channel.valid_info(type.key) ->
+            Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: type.key]))
+          not Channel.valid_info(type.key, type.value) ->
             Connection.write(state, Update.fail(update, Update.MalformedChannelInfo))
           true ->
-            Channel.info(channel, update.key, update.value)
+            Channel.info(channel, type.key, type.value)
             Channel.write(channel, update)
         end
       :error ->

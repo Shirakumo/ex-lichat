@@ -21,7 +21,7 @@ defmodule Connection do
           try do
             case state.state do
               nil ->
-                if update.type == Update.Connect do
+                if update.type.__struct__ == Update.Connect do
                   run(Update.handle(update, state))
                 else
                   write(state, Update.fail(Update.InvalidUpdate))
@@ -40,16 +40,19 @@ defmodule Connection do
                 end
             end
           rescue
-            RuntimeError ->
-              write(state, Update.fail(update, Update.UpdateFailure))
-            run(state)
+            e in RuntimeError ->
+              write(state, Update.fail(update, Update.UpdateFailure, [text: e.message]))
+              run(state)
           end
         rescue
-          ParseFailure ->
-            write(state, Update.fail(Update.MalformedUpdate))
+          e in Error.ParseFailure ->
+            write(state, Update.fail(Update.MalformedUpdate, e.message))
             run(state)
-          UnsupportedUpdate ->
-            write(state, Update.fail(Update.InvalidUpdate))
+          e in Error.UnsupportedUpdate ->
+            write(state, Update.fail(Update.InvalidUpdate, e.message))
+            run(state)
+          e in RuntimeError ->
+            write(state, Update.fail(Update.Failure, e.message))
             run(state)
         end
       {:tcp_closed, _} ->

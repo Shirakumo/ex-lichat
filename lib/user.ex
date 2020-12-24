@@ -14,6 +14,10 @@ defmodule User do
     end
   end
 
+  def ensure_user(registry) do
+    ensure_user(registry, Lichat.server_name())
+  end
+
   def ensure_user(registry, name) do
     ## FIXME: Race condition here
     case Registry.lookup(registry, name) do

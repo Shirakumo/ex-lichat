@@ -73,8 +73,12 @@ defmodule Channel do
     end
   end
 
-  def ensure_channel(registry, name) do
-    ensure_channel(registry, name, default_channel_permissions())
+  def ensure_channel(registry) do
+    ensure_channel(registry, Lichat.server_name(), evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()))
+  end
+
+  def ensure_channel(registry, name, registrant) when is_binary(registrant) do
+    ensure_channel(registry, name, evaluate_permissions(default_channel_permissions(), registrant))
   end
 
   def ensure_channel(registry, name, permissions) do
@@ -239,11 +243,11 @@ defmodule Channel do
     <<?@>> <> Toolkit.hashid()
   end
 
-  defp compile_rule(:true) do
+  defp compile_rule(true) do
     %{:default => true}
   end
 
-  defp compile_rule(:false) do
+  defp compile_rule(false) do
     %{:default => false}
   end
 
@@ -264,5 +268,15 @@ defmodule Channel do
       true ->
         [Symbol.li("+") | Enum.map(rule, fn {k, _} -> String.downcase(k) end)]
     end
+  end
+
+  defp evaluate_permissions(permissions, registrant) do
+    Map.new(permissions, fn {t, r} ->
+      case r do
+        true -> {t, %{:default => true}}
+        false -> {t, %{:default => false}}
+        :registrant -> {t, %{registrant => true, :default => false}}
+      end
+    end)
   end
 end

@@ -3,10 +3,10 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
   def handle(type, update, state) do
     case Channel.get(Channel, type.channel) do
       {:ok, channel} ->
-        map = if update.keys == true do
+        map = if type.keys == true do
             Channel.info(channel)
           else
-            keys = Enum.filter(update.keys, fn k ->
+            keys = Enum.filter(type.keys, fn k ->
               if Channel.valid_info(k) do
                 true
               else

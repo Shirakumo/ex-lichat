@@ -41,7 +41,7 @@ defmodule Update do
     end)
     from_fields = Enum.map(fields, fn({x, y, _, r})->
       {x, if r do
-            quote(do: Toolkit.getf!(args, unquote(y)))
+            quote(do: Update.getf!(args, unquote(y)))
           else
             quote(do: Toolkit.getf(args, unquote(y)))
           end}
@@ -165,7 +165,14 @@ defmodule Update do
   def list_types() do
     {:ok, mods} = :application.get_key(:lichat, :modules)
     Enum.filter(mods, &is_update?(&1))
-  end 
+  end
+
+  def getf!(plist, key) do
+    case Toolkit.getf(plist, key) do
+      nil -> raise Error.ParseFailure, message: "Key #{key} is missing."
+      x -> x
+    end
+  end
 end
 
 defimpl Update.Serialize, for: Any do
@@ -187,9 +194,9 @@ defimpl Update.Serialize, for: Update do
   end
   def from_list(_, args) do
     %Update{
-      id: Toolkit.getf!(args, :id),
-      clock: Toolkit.getf!(args, :clock),
-      from: Toolkit.getf!(args, :from),
-      type: Toolkit.getf!(args, :type)}
+      id: Update.getf!(args, :id),
+      clock: Update.getf!(args, :clock),
+      from: Update.getf!(args, :from),
+      type: Update.getf!(args, :type)}
   end
 end

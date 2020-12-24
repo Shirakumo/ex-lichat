@@ -32,9 +32,9 @@ defmodule Lichat do
 
     opts = [strategy: :one_for_one, name: Lichat.Supervisor]
     pid = Supervisor.start_link(children, opts)
-
-    Channel.ensure_channel(Channel, server_name(), Channel.default_primary_channel_permissions())
-    User.ensure_user(User, server_name())
+    
+    Channel.ensure_channel(Channel)
+    User.ensure_user(User)
     
     pid
   end

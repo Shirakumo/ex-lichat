@@ -12,7 +12,7 @@ defupdate(Kick, "KICK", [:channel, :target]) do
             Channel.write(channel, update)
             Channel.write(channel, Update.reply(update, Update.Leave, [
                       channel: channel,
-                      from: update.target ]))
+                      from: type.target ]))
             User.leave(state.target, channel)
         end
       :error ->
