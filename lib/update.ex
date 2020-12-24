@@ -111,6 +111,20 @@ defmodule Update do
     Execute.handle(update.type, update, state)
   end
 
+  def permitted?(update) do
+    case Map.get(update, :channel) do
+      nil ->
+        Channel.permitted?(Channel.primary(Channel), update)
+      channel ->
+        case Channel.get(Channel, channel) do
+          {:ok, channel} ->
+            Channel.permitted?(channel, update)
+          :error ->
+            Channel.permitted?(Channel.primary(Channel), update)
+        end
+    end
+  end
+
   def make(type, args) do
     id = Keyword.get_lazy(args, :id, &Toolkit.id/0)
     clock = Keyword.get_lazy(args, :clock, &Toolkit.universal_time/0)

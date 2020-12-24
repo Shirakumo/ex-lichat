@@ -30,7 +30,14 @@ defmodule Connection do
               :closed ->
                 close(state)
               _ ->
-                run(Update.handle(update, state))
+                cond do
+                  update.from != state.user.name ->
+                    write(state, Update.fail(update, Update.UsernameMismatch))
+                  not Update.permitted?(update) ->
+                    write(state, Update.fail(update, Update.InsufficientPermissions))
+                  true ->
+                    run(Update.handle(update, state))
+                end
             end
           rescue
             RuntimeError ->
