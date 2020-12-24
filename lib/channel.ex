@@ -44,6 +44,19 @@ defmodule Channel do
     valid_info(symbol) and is_binary(value)
   end
 
+  def permitted?(permissions, update) when is_map(permissions) do
+    case Map.fetch(permissions, update.type) do
+      {:ok, rule} ->
+        Map.get_lazy(rule, String.downcase(update.from), fn -> Map.fetch!(rule, :default) end)
+      :error ->
+        :error
+    end
+  end
+
+  def permitted?(channel, update) do
+    permitted?(permissions(channel), update)
+  end
+
   def list(registry) do
     Registry.keys(registry, self())
   end
@@ -188,9 +201,9 @@ defmodule Channel do
       Enum.count(rule) == 0 ->
         default
       default == true ->
-        [Symbol.li("-") | Enum.map(rule, fn {k, _} -> k end)]
+        [Symbol.li("-") | Enum.map(rule, fn {k, _} -> String.downcase(k) end)]
       true ->
-        [Symbol.li("+") | Enum.map(rule, fn {k, _} -> k end)]
+        [Symbol.li("+") | Enum.map(rule, fn {k, _} -> String.downcase(k) end)]
     end
   end
 end
