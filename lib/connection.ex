@@ -1,7 +1,7 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct socket: nil, user: nil, state: nil
+  defstruct socket: nil, user: nil, name: nil, state: nil
 
   def start_link(socket) do
     :inet.setopts(socket, [active: true])
@@ -9,6 +9,7 @@ defmodule Connection do
   end
   
   def run(state) do
+    next_state =
     receive do
       {:tcp, socket, data} ->
         # TODO: Reconstruct full updates from partial data,
@@ -22,7 +23,7 @@ defmodule Connection do
             case state.state do
               nil ->
                 if update.type.__struct__ == Update.Connect do
-                  run(Update.handle(update, state))
+                  Update.handle(update, state)
                 else
                   write(state, Update.fail(Update.InvalidUpdate))
                   close(state)
@@ -31,33 +32,29 @@ defmodule Connection do
                 close(state)
               _ ->
                 update = case update.from do
-                           nil -> %{update | from: state.user.name}
+                           nil -> %{update | from: state.name}
                            _ -> update
                          end
                 cond do
-                  update.from != state.user.name ->
+                  update.from != state.name ->
                     write(state, Update.fail(update, Update.UsernameMismatch))
                   not Update.permitted?(update) ->
                     write(state, Update.fail(update, Update.InsufficientPermissions))
                   true ->
-                    run(Update.handle(update, state))
+                    Update.handle(update, state)
                 end
             end
           rescue
             e in RuntimeError ->
               write(state, Update.fail(update, Update.UpdateFailure, [text: e.message]))
-              run(state)
           end
         rescue
           e in Error.ParseFailure ->
             write(state, Update.fail(Update.MalformedUpdate, e.message))
-            run(state)
           e in Error.UnsupportedUpdate ->
             write(state, Update.fail(Update.InvalidUpdate, e.message))
-            run(state)
           e in RuntimeError ->
             write(state, Update.fail(Update.Failure, e.message))
-            run(state)
         end
       {:tcp_closed, _} ->
         Logger.info("TCP closed #{inspect(state.user)}")
@@ -67,21 +64,22 @@ defmodule Connection do
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
-        run(state)
     end
+    run(next_state)
   end
 
   def write(state, update) do
     :gen_tcp.send(state.socket, Update.print(update))
+    state
   end
   
   def establish(state, update) do
     Logger.info("Connect #{inspect(update)}")
-    User.connect(User.ensure_user(User, update.from), self())
+    user = User.connect(User.ensure_user(User, update.from), self())
     write(state, Update.reply(update, Update.Connect, [
               version: Lichat.version(),
               extensions: Lichat.extensions()]))
-    %{state | state: :connected}
+    %{state | state: :connected, user: user, name: update.from}
   end
 
   def close(state) do

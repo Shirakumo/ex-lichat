@@ -4,6 +4,7 @@ defupdate(Emotes, "EMOTES", [:names]) do
     Enum.each(Emote.list(Emote), fn emote -> 
       if not Enum.member?(type.names, emote.name) do
         Connection.write(state, Update.reply(update, Update.Emote, [
+                  from: Lichat.server_name(),
                   name: emote.name,
                   content_type: emote.type,
                   payload: emote.payload ]))

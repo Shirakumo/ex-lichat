@@ -6,11 +6,12 @@ defupdate(Pull, "PULL", [:channel, :target]) do
         cond do
           not User.in_channel?(state.user, channel) ->
             Connection.write(state, Update.fail(update, Update.NotInChannel))
-          User.in_channel?(state.target, channel) ->
+          User.in_channel?(type.target, channel) ->
             Connection.write(state, Update.fail(update, Update.AlreadyInChannel))
           true ->
-            User.join(state.target, channel)
+            User.join(type.target, channel)
             Channel.write(channel, Update.reply(update, Update.Join, [
+                      from: type.target,
                       channel: type.channel]))
         end
       :error ->

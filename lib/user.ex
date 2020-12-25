@@ -69,6 +69,10 @@ defmodule User do
     user
   end
 
+  def name(user) do
+    GenServer.call(user, :name)
+  end
+
   def channels(user) do
     GenServer.call(user, :channels)
   end
@@ -85,6 +89,11 @@ defmodule User do
   def init([registry: registry, name: name]) do
     {:ok, _} = Registry.register(registry, name, nil)
     {:ok, %User{name: name}}
+  end
+
+  @impl true
+  def handle_call(:name, _from, user) do
+    {:reply, user.name, user}
   end
 
   @impl true

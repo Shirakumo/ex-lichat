@@ -102,21 +102,8 @@ defmodule Channel do
     valid_info(symbol) and is_binary(value)
   end
 
-  def permitted?(permissions, update) when is_map(permissions) do
-    case Map.fetch(permissions, update.type) do
-      {:ok, rule} ->
-        Map.get_lazy(rule, String.downcase(update.from), fn -> Map.fetch!(rule, :default) end)
-      :error ->
-        permitted?(Channel.primary(Channel), update)
-    end
-  end
-
-  def permitted?(channel, update) do
-    permitted?(permissions(channel), update)
-  end
-
   def list(registry) do
-    Registry.keys(registry, self())
+    Registry.select(registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
   end
 
   def join(channel) do
@@ -137,6 +124,17 @@ defmodule Channel do
   def update(channel, permissions) do
     GenServer.cast(channel, {:permissions, permissions})
     channel
+  end
+
+  def permitted?(channel, update) when is_binary(channel) do
+    case Channel.get(Channel, channel) do
+      {:ok, channel} -> permitted?(channel, update)
+      :error -> true
+    end
+  end
+
+  def permitted?(channel, update) do
+    GenServer.call(channel, {:permitted?, update.type.__struct__, update.from})
   end
   
   def users(channel) do
@@ -194,6 +192,20 @@ defmodule Channel do
   @impl true
   def handle_cast({:info, key, value}, channel) do
     {:noreply, %{channel | meta: Map.put(channel.meta, key, value)}}
+  end
+
+  @impl true
+  def handle_call({:permitted?, type, user}, from, channel) do
+    case Map.fetch(channel.permissions, type) do
+      {:ok, rule} ->
+        {:reply, Map.get_lazy(rule, String.downcase(user), fn -> Map.fetch!(rule, :default) end), channel}
+      :error ->
+        if channel.name == Lichat.server_name() do
+          {:reply, false, channel}
+        else
+          handle_call({:permitted?, type, user}, from, Channel.primary(Channel))
+        end
+    end
   end
 
   @impl true

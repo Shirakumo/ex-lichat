@@ -10,6 +10,7 @@ defupdate(UserInfo, "USER-INFO", [:target]) do
                    :error -> false
                  end
     Connection.write(state, Update.reply(update, Update.UserInfo, [
+              from: Lichat.server_name(),
               connections: connections,
               registered: registered ]))
     state

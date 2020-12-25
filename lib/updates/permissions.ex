@@ -7,6 +7,7 @@ defupdate(Permissions, "PERMISSIONS", [:channel, [:permissions, required: false]
           Channel.update(channel, type.permissions)
         end
         Connection.write(state, Update.reply(update, Update.Permissions, [
+                  from: Lichat.server_name(),
                   channel: type.channel,
                   permissions: Channel.permissions(channel)
                 ]))
