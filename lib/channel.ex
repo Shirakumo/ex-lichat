@@ -32,6 +32,8 @@ defmodule Channel do
         {Update.SetChannelInfo, false}])
 
   def default_primary_channel_permissions, do: Map.new([
+        {Update.Connect, true},
+        {Update.Disconnect, true},
         {Update.Permissions, :registrant},
         {Update.Create, true},
         {Update.Join, true},
@@ -106,13 +108,13 @@ defmodule Channel do
     Registry.select(registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
   end
 
-  def join(channel) do
-    GenServer.cast(channel, {:join, self()})
+  def join(channel, user) do
+    GenServer.cast(channel, {:join, user})
     channel
   end
   
-  def leave(channel) do
-    GenServer.cast(channel, {:leave, self()})
+  def leave(channel, user) do
+    GenServer.cast(channel, {:leave, user})
     channel
   end
   
@@ -135,6 +137,10 @@ defmodule Channel do
 
   def permitted?(channel, update) do
     GenServer.call(channel, {:permitted?, update.type.__struct__, update.from})
+  end
+
+  def name(channel) do
+    GenServer.call(channel, :name)
   end
   
   def users(channel) do
@@ -209,8 +215,13 @@ defmodule Channel do
   end
 
   @impl true
+  def handle_call(:name, _from, channel) do
+    {:reply, channel.name, channel}
+  end
+  
+  @impl true
   def handle_call(:users, _from, channel) do
-    {:reply, channel.users, channel}
+    {:reply, Enum.map(channel.users, fn {k, _} -> k end), channel}
   end
 
   @impl true

@@ -7,7 +7,7 @@ defupdate(Create, "CREATE", [:channel]) do
         User.join(state.user, channel)
         Connection.write(state, Update.reply(update, Update.Join, [channel: name]))
       name ->
-        case Channel.ensure_channel(Channel, name) do
+        case Channel.ensure_channel(Channel, name, update.from) do
           {:old, _} ->
             Connection.write(state, Update.fail(update, Update.ChannelnameTaken))
           {:new, channel} ->

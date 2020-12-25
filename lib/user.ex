@@ -108,7 +108,7 @@ defmodule User do
 
   @impl true
   def handle_call({:in_channel?, channel}, _from, user) do
-    {:reply, Map.has_key?(user.channels, channel)}
+    {:reply, Map.has_key?(user.channels, channel), user}
   end
 
   @impl true
@@ -125,19 +125,19 @@ defmodule User do
   @impl true
   def handle_cast({:join, from}, user) do
     ref = Process.monitor(from)
-    Channel.join(from)
+    Channel.join(from, self())
     {:noreply, %{user | channels: Map.put(user.channels, from, ref)}}
   end
 
   @impl true
   def handle_cast({:leave, from}, user) do
-    Channel.leave(from)
+    Channel.leave(from, self())
     handle_info({:down, Map.get(user.channels, from), :process, from, :disconnect}, user)
   end
 
   @impl true
   def handle_cast({:send, update}, user) do
-    Enum.each(Map.keys(user.connections), fn connection -> send connection, update end)
+    Enum.each(Map.keys(user.connections), fn connection -> send(connection, {:send, update}) end)
     {:noreply, user}
   end
 

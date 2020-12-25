@@ -112,7 +112,7 @@ defmodule Update do
   end
 
   def permitted?(update) do
-    case Map.get(update, :channel) do
+    case Map.get(update.type, :channel) do
       nil ->
         Channel.permitted?(Channel.primary(Channel), update)
       channel ->
