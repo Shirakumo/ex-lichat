@@ -55,7 +55,7 @@ defmodule User do
   end
 
   def join(user, channel) do
-    GenServer.cast(user, {:join, channel})
+    GenServer.call(user, {:join, channel})
     user
   end
 
@@ -112,6 +112,13 @@ defmodule User do
   end
 
   @impl true
+  def handle_call({:join, from}, _from, user) do
+    ref = Process.monitor(from)
+    Channel.join(from, self())
+    {:reply, :ok, %{user | channels: Map.put(user.channels, from, ref)}}
+  end
+
+  @impl true
   def handle_cast({:connect, from}, user) do
     ref = Process.monitor(from)
     {:noreply, %{user | connections: Map.put(user.connections, from, ref)}}
@@ -120,13 +127,6 @@ defmodule User do
   @impl true
   def handle_cast({:disconnect, from}, user) do
     handle_info({:down, Map.get(user.connections, from), :process, from, :disconnect}, user)
-  end
-
-  @impl true
-  def handle_cast({:join, from}, user) do
-    ref = Process.monitor(from)
-    Channel.join(from, self())
-    {:noreply, %{user | channels: Map.put(user.channels, from, ref)}}
   end
 
   @impl true

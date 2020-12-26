@@ -109,7 +109,7 @@ defmodule Channel do
   end
 
   def join(channel, user) do
-    GenServer.cast(channel, {:join, user})
+    GenServer.call(channel, {:join, user})
     channel
   end
   
@@ -171,12 +171,6 @@ defmodule Channel do
   end
   
   @impl true
-  def handle_cast({:join, from}, channel) do
-    ref = Process.monitor(from)
-    {:noreply, %{channel | users: Map.put(channel.users, from, ref)}}
-  end
-  
-  @impl true
   def handle_cast({:leave, from}, channel) do
     handle_info({:DOWN, Map.get(channel.users, from), :process, from, :disconnect}, channel)
   end
@@ -198,6 +192,12 @@ defmodule Channel do
   @impl true
   def handle_cast({:info, key, value}, channel) do
     {:noreply, %{channel | meta: Map.put(channel.meta, key, value)}}
+  end
+  
+  @impl true
+  def handle_call({:join, from}, _from, channel) do
+    ref = Process.monitor(from)
+    {:reply, :ok, %{channel | users: Map.put(channel.users, from, ref)}}
   end
 
   @impl true
@@ -243,6 +243,7 @@ defmodule Channel do
   def handle_info({:DOWN, ref, :process, pid, _reason}, channel) do
     Process.demonitor(ref)
     users = Map.delete(channel.users, pid)
+    ## FIXME: We don't currently cull channels for expiry...
     if Enum.empty?(users) and expired?(channel) do
       {:stop, {:shutdown, "no more connections"}, %Channel{}}
     else
