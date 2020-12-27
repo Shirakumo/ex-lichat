@@ -141,7 +141,7 @@ defmodule Update do
   end
 
   def fail(type) do
-    make(type, [from: Toolkit.config(:name)])
+    make(type, [from: Lichat.server_name()])
   end
 
   def fail(update, type) when is_struct(update) do
@@ -149,11 +149,11 @@ defmodule Update do
   end
 
   def fail(type, message) do
-    make(type, [from: Toolkit.config(:name), text: message])
+    make(type, [from: Lichat.server_name(), text: message])
   end
   
   def fail(update, type, message) when is_struct(update) do
-    make(type, [update_id: update.id, from: Toolkit.config(:name), text: message])
+    make(type, [update_id: update.id, from: Lichat.server_name(), text: message])
   end
 
   def is_update?(module) do

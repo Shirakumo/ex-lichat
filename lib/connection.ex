@@ -14,6 +14,7 @@ defmodule Connection do
   end
   
   def run(state) do
+    ## todo: timeouting with pings
     next_state =
       receive do
       {:tcp, socket, data} ->
@@ -45,6 +46,7 @@ defmodule Connection do
   end
 
   def handle_update(state, data) do
+    ## todo: throttling
     try do
       update = Update.parse(data)
       try do
