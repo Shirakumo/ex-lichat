@@ -5,7 +5,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
       nil ->
         update = case update.from do
                    nil -> %{update | from: User.random_name(User)}
-                   x -> x
+                   _ -> update
                  end
         if Lichat.compatible?(type.version) do
           profile = %Profile{name: update.from, password: type.password}

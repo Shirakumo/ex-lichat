@@ -1,11 +1,12 @@
 defmodule Websocket do
   use Bitwise
+  require Logger
   @behaviour Connection
 
   @impl Connection
   def init(data, state) do
     if String.starts_with?(data, "GET ") do
-      %{state | type: __MODULE__, payload: <<>>, state: :header}
+      {:ok, %{state | type: __MODULE__, accumulator: {<<>>,<<>>}, state: :header}}
     else
       :error
     end
@@ -13,7 +14,8 @@ defmodule Websocket do
 
   @impl Connection
   def handle_payload(state, data, _max_size) do
-    data = state.accumulator <> data
+    {accumulator, payload} = state.accumulator
+    data = accumulator <> data
     case state.state do
       :header ->
         case :erlang.decode_packet(:http, data, []) do
@@ -21,36 +23,41 @@ defmodule Websocket do
             case decode_headers(headers) do
               {:ok, rest, key} ->
                 Connection.write(state, encode_http_response(key))
-                {:more, %{state | accumulator: rest, state: nil}}
-              :error ->
-                {:more, Connection.shutdown(state)}
+                if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
+                {:more, %{state | accumulator: {<<>>, <<>>}, state: nil}}
               {:more, _} ->
-                {:more, %{state | accumulator: data}}
-              {:error, _} ->
-                {:more, Connection.shutdown(state)}
+                {:more, %{state | accumulator: {data, <<>>}}}
+              {:error, reason} ->
+                {:error, reason, state}
             end
-          _ ->
-            case decode_frame(data) do
-              :more ->
-                {:more, %{state | accumulator: data}}
-              {:ok, fin, opcode, payload, rest} ->
-                payload = state.payload <> payload
-                case opcode do
-                  8 ->
-                    write(state, 8, <<>>)
-                    {:more, Connection.shutdown(state)}
-                  9 ->
-                    write(state, 10, payload)
-                    {:more, %{state | payload: <<>>, accumulator: rest}}
-                  10 ->
-                    {:more, %{state | payload: <<>>, accumulator: rest}}
-                  _ ->
-                    case fin do
-                      0 -> {:more, %{state | payload: payload, accumulator: rest}}
-                      1 -> {:ok, payload, %{state | payload: <<>>, accumulator: rest}}
-                    end
+          {:more, _} -> 
+            {:more, %{state | accumulator: {data, <<>>}}}
+          {:error, reason} -> 
+            {:error, reason, state}
+        end
+      _ ->
+        case decode_frame(data) do
+          {:ok, fin, opcode, data, rest} ->
+            payload = payload <> data
+            case opcode do
+              8 ->
+                write(state, 8, <<>>)
+                {:more, Connection.shutdown(state)}
+              9 ->
+                write(state, 10, payload)
+                {:more, %{state | accumulator: {rest, <<>>}}}
+              10 ->
+                {:more, %{state | accumulator: {rest, <<>>}}}
+              _ ->
+                case fin do
+                  0 -> {:more, %{state | accumulator: {rest, payload}}}
+                  1 -> {:ok, payload, %{state | accumulator: {rest, <<>>}}}
                 end
             end
+          :more ->
+            {:more, %{state | accumulator: {data, payload}}}
+          :error ->
+            {:error, "Bad packet", state}
         end
     end
   end
@@ -71,7 +78,8 @@ defmodule Websocket do
 Upgrade: websocket\r
 Connection: Upgrade\r
 Sec-WebSocket-Accept: " <> websocket_key(key) <> "\r
-\r"
+Sec-WebSocket-Protocol: lichat\r
+\r\n"
   end
 
   defp websocket_key(key) do
@@ -83,25 +91,28 @@ Sec-WebSocket-Accept: " <> websocket_key(key) <> "\r
   end
 
   defp decode_headers({:ok, :http_eoh, rest}, state) do
-    if state[:upgrade] and state[:connection] and state[:key] do
+    if state[:upgrade] == true and state[:connection] == true and state[:key] != nil do
       {:ok, rest, state[:key]}
     else
-      :error
+      {:error, "Missing fields"}
     end
   end
   
-  defp decode_headers({:ok, {:http_header, _, field, _, value}, rest}, state) do
-    case field do
-      "Upgrade" -> decode_headers(rest, %{state | upgrade: value == "websocket"})
-      "Connection" -> decode_headers(rest, %{state | connection: value == "Upgrade"})
-      "Sec-Websocket-Key" -> decode_headers(rest, %{state | key: value})
-      _ -> decode_headers(rest, state)
-    end
+  defp decode_headers({:ok, {:http_header, _, _, field, value}, rest}, state) do
+    state =  case field do
+               'Upgrade' -> Map.put(state, :upgrade, value == 'websocket')
+               'Connection' -> Map.put(state, :connection, value == 'Upgrade')
+               'Sec-WebSocket-Key' -> Map.put(state, :key, to_string(value))
+               _ -> state
+             end
+    decode_headers(rest, state)
   end
   
-  defp decode_headers(string, state) do
+  defp decode_headers(string, state) when is_binary(string) do
     decode_headers(:erlang.decode_packet(:httph, string, []), state)
   end
+
+  defp decode_headers(result, _), do: result
   
   defp write(state, opcode, data) do
     Connection.write(state, encode_frame(opcode, data))
@@ -126,12 +137,20 @@ Sec-WebSocket-Accept: " <> websocket_key(key) <> "\r
   end
   
   ## Extended length 2
-  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 127::7, len::64, key::32, payload :: binary>>), do: decode_frame({fin, opcode, len, key, payload})
+  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 127::7, len::64, key::binary-size(4), payload :: binary>>) do
+    decode_frame({fin, opcode, len, key, payload})
+  end
   ## Extended length 1
-  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 126::7, len::16, key::32, payload :: binary>>), do: decode_frame({fin, opcode, len, key, payload})
+  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 126::7, len::16, key::binary-size(4), payload :: binary>>) do
+    decode_frame({fin, opcode, len, key, payload})
+  end
   ## Standard length
-  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::32, payload :: binary>>), do: decode_frame({fin, opcode, len, key, payload})
-  defp decode_frame(_), do: :more
+  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::binary-size(4), payload :: binary>>) do
+    decode_frame({fin, opcode, len, key, payload})
+  end
+  defp decode_frame(_) do
+    :error
+  end
 
   ## Might be terribly inefficient, idk.
   defp xor_mask(payload, len, mask), do: xor_mask(payload, len, mask, 0, "")

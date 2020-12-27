@@ -18,7 +18,7 @@ defmodule Connection do
       receive do
       {:tcp, socket, data} ->
         state = if state.type == nil do
-            init(data, state)
+            init(data, %{state | socket: socket})
           else
             %{state | socket: socket}
           end
@@ -28,6 +28,9 @@ defmodule Connection do
             handle_update(state, update)
           {:more, state} ->
             state
+          {:error, reason, state} ->
+            Logger.info("Handler failure: #{reason}")
+            shutdown(state)
         end
       {:tcp_closed, _} ->
         Logger.info("TCP closed #{inspect(state.user)}")
