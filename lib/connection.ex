@@ -1,7 +1,12 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>
+  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>
+
+  @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
+  @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
+  @callback write(Map.t, Map.t) :: Map.t
+  @callback close(Map.t) :: Map.t
 
   def start_link(socket) do
     :inet.setopts(socket, [active: true])
@@ -12,8 +17,13 @@ defmodule Connection do
     next_state =
       receive do
       {:tcp, socket, data} ->
-        state = %{state | socket: socket}
-        case stitch(state, data, Toolkit.config(:max_update_size, 8192)) do
+        state = if state.type == nil do
+            init(data, state)
+          else
+            %{state | socket: socket}
+          end
+        
+        case state.type.handle_payload(state, data, Toolkit.config(:max_update_size, 8388608)) do
           {:ok, update, state} ->
             handle_update(state, update)
           {:more, state} ->
@@ -29,35 +39,6 @@ defmodule Connection do
         write(state, msg)
     end
     run(next_state)
-  end
-
-  def stitch(state, data, max_size) do
-    case state.accumulator do
-      :dropping ->
-        case :binary.split(data, <<0>>) do
-          [ _, rest ] ->
-            stitch(%{state | accumulator: <<>>}, rest, max_size)
-          _ ->
-            {:more, state}
-        end
-      acc ->
-        data = acc <> data
-        case :erlang.decode_packet(:line, data, [line_length: max_size]) do
-          {:ok, payload, rest} ->
-            if :binary.last(payload) != 0 and byte_size(payload) == max_size do
-              write(state, Update.fail(Update.UpdateTooLong))
-              stitch(%{state | accumulator: :dropping}, rest, max_size)
-            else
-              {:ok, payload, %{state | accumulator: rest}}
-            end
-          {:more, _} ->
-            {:more, %{state | accumulator: data}}
-          ## This case should never occur, but we handle it anyway.
-          {:error, reason} ->
-            write(state, Update.fail(Update.MalformedUpdate, [text: reason]))
-            {:more, %{state | accumulator: :dropping}}
-        end
-    end
   end
 
   def handle_update(state, data) do
@@ -102,9 +83,28 @@ defmodule Connection do
     end
   end
 
-  def write(state, update) do
-    :gen_tcp.send(state.socket, Update.print(update))
+  def init(data, state) do
+    Enum.find_value([Websocket, RawTCP], nil, fn module ->
+      case module.init(data, state) do
+        {:ok, state} ->
+          Logger.info("New #{inspect(module)} connection")
+          state
+        :error -> nil
+      end
+    end)
+  end
+
+  def write(state, data) when is_binary(data) do
+    :gen_tcp.send(state.socket, data)
     state
+  end
+
+  def write(state, data) do
+    state.type.write(state, data)
+  end
+
+  def close(state) do
+    state.type.close(state)
   end
   
   def establish(state, update) do
@@ -120,10 +120,7 @@ defmodule Connection do
     %{state | state: :connected, user: user, name: update.from}
   end
 
-  def close(state) do
-    write(state, Update.make(Update.Disconnect, [
-              from: Toolkit.config(:name)
-            ]))
+  def shutdown(state) do
     :gen_tcp.shutdown(state.socket, :write)
     %{state | state: :closed}
   end
