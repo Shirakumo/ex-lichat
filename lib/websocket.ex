@@ -120,10 +120,11 @@ Sec-WebSocket-Protocol: lichat\r
 
   defp encode_frame(opcode, data) do
     size = byte_size(data)
-    if size <= 125 do
-      <<1::1, 0::3, opcode::4, 0::1, size::7, data::binary>>
-    else
-      <<1::1, 0::3, opcode::4, 0::1, 127::7, byte_size(data)::64, data::binary>>
+    cond do
+      size <= 125     -> <<1::1, 0::3, opcode::4, 0::1, size::7, data::binary>>
+      size < 1 <<< 16 -> <<1::1, 0::3, opcode::4, 0::1, 126::7, byte_size(data)::16, data::binary>>
+      size < 1 <<< 64 -> <<1::1, 0::3, opcode::4, 0::1, 127::7, byte_size(data)::64, data::binary>>
+      true -> raise "Payload too big to send in one frame."
     end
   end
 

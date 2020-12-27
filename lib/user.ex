@@ -121,6 +121,7 @@ defmodule User do
   @impl true
   def handle_cast({:connect, from}, user) do
     ref = Process.monitor(from)
+    Logger.info("Connecting #{inspect(from)} through #{inspect(ref)}")
     {:noreply, %{user | connections: Map.put(user.connections, from, ref)}}
   end
   
@@ -142,7 +143,7 @@ defmodule User do
   end
 
   @impl true
-  def handle_info({:down, ref, :process, pid, _reason}, user) do
+  def handle_info({:DOWN, ref, :process, pid, _reason}, user) do
     Process.demonitor(ref)
     connections = Map.delete(user.connections, pid)
     channels = Map.delete(user.channels, pid)

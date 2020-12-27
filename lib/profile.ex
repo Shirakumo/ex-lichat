@@ -48,6 +48,11 @@ defmodule Profile do
   end
 
   def check(server, name, password) do
+    password = case password do
+                 false -> nil
+                 [] -> nil
+                 x -> x
+               end
     check(server, %Profile{name: name, password: password})
   end
 

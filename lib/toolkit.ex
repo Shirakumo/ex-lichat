@@ -41,10 +41,21 @@ defmodule Toolkit do
 
   def getf(plist, key, default \\ nil)
   def getf([], _key, default), do: default
-  def getf([ k, v | c ], key, default) when is_atom(k) do
-    if k == key, do: v, else: getf(c, key, default)
+  def getf(list, key, default) do
+    key = extract_key(key)
+    getf_(list, key, default)
   end
-  def getf([ k, v | c ], key, default) when is_struct(k) do
-    if String.upcase(Atom.to_string(key)) == k.name, do: v, else: getf(c, key, default)
+
+  defp getf_([], _key, default), do: default
+  defp getf_([k, v | rs], key, default) do
+    if extract_key(k) == key, do: v, else: getf_(rs, key, default)
+  end
+
+  defp extract_key(key) do
+    cond do
+      is_binary(key) -> key
+      is_atom(key) -> String.upcase(Atom.to_string(key))
+      is_struct(key) -> key.name
+    end
   end
 end

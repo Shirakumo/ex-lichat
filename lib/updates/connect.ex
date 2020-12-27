@@ -8,11 +8,10 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                    _ -> update
                  end
         if Lichat.compatible?(type.version) do
-          profile = %Profile{name: update.from, password: type.password}
-          case Profile.check(Profile, profile) do
+          case Profile.check(Profile, update.from, type.password) do
             :not_registered ->
               cond do
-                type.password != nil ->
+                is_binary(type.password) ->
                   Connection.write(connection, Update.fail(update, Update.NoSuchProfile))
                   Connection.close(connection)
                 User.get(User, update.from) != :error ->

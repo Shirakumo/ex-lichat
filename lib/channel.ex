@@ -34,6 +34,8 @@ defmodule Channel do
   def default_primary_channel_permissions, do: Map.new([
         {Update.Connect, true},
         {Update.Disconnect, true},
+        {Update.Ping, true},
+        {Update.Pong, true},
         {Update.Permissions, :registrant},
         {Update.Create, true},
         {Update.Join, true},
@@ -201,7 +203,7 @@ defmodule Channel do
   end
 
   @impl true
-  def handle_call({:permitted?, type, user}, from, channel) do
+  def handle_call({:permitted?, type, user}, _from, channel) do
     case Map.fetch(channel.permissions, type) do
       {:ok, rule} ->
         {:reply, Map.get_lazy(rule, String.downcase(user), fn -> Map.fetch!(rule, :default) end), channel}
@@ -209,7 +211,7 @@ defmodule Channel do
         if channel.name == Lichat.server_name() do
           {:reply, false, channel}
         else
-          handle_call({:permitted?, type, user}, from, Channel.primary(Channel))
+          {:reply, GenServer.call(Channel.primary(Channel), {:permitted?, type, user}), channel}
         end
     end
   end

@@ -33,15 +33,15 @@ defmodule Connection do
             shutdown(state)
         end
       {:tcp_closed, _} ->
-        Logger.info("TCP closed #{inspect(state.user)}")
+        Logger.info("TCP closed #{inspect(self())} #{inspect(state.user)}")
         %{state | state: :closed}
       {:tcp_error, _} ->
-        Logger.info("TCP error #{inspect(state.user)}")
+        Logger.info("TCP error #{inspect(self())} #{inspect(state.user)}")
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
     end
-    run(next_state)
+    if next_state.state != :closed, do: run(next_state)
   end
 
   def handle_update(state, data) do

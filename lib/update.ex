@@ -1,4 +1,5 @@
 defmodule Update do
+  require Logger
   defstruct id: nil, clock: nil, from: nil, type: %{}
   @callback type_symbol() :: Symbol.t
   
@@ -29,15 +30,15 @@ defmodule Update do
     name = Module.concat(Update, Macro.expand(name, __ENV__))
     fields = Enum.map(fields, fn(x) ->
       case x do
-        [field | args] -> {field, Keyword.get(args, :symbol, field), Keyword.get(args, :default), Keyword.get(args, :required)}
-        field -> {field, field, nil, true}
+        [field | args] -> {field, Keyword.get(args, :symbol, String.upcase(Atom.to_string(field))), Keyword.get(args, :default), Keyword.get(args, :required)}
+        field -> {field, String.upcase(Atom.to_string(field)), nil, true}
       end
     end)
     fielddefs = Enum.map(fields, fn({x, _, d, _})->
       {x, d}
     end)
     to_fields = Enum.flat_map(fields, fn({x, y, _, _})->
-      [x, quote(do: Map.get(type, unquote(y)))]
+      [quote(do: Symbol.kw(unquote(y))), quote(do: Map.get(type, unquote(x)))]
     end)
     from_fields = Enum.map(fields, fn({x, y, _, r})->
       {x, if r do
@@ -194,9 +195,9 @@ defimpl Update.Serialize, for: Update do
   end
   def from_list(_, args) do
     %Update{
-      id: Update.getf!(args, :id),
-      clock: Toolkit.getf(args, :clock, Toolkit.universal_time()),
-      from: Toolkit.getf(args, :from),
+      id: Update.getf!(args, "ID"),
+      clock: Toolkit.getf(args, "CLOCK", Toolkit.universal_time()),
+      from: Toolkit.getf(args, "FROM"),
       type: Update.getf!(args, :type)}
   end
 end
