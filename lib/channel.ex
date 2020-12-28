@@ -55,7 +55,8 @@ defmodule Channel do
   def start_link(_opts) do
     result = Registry.start_link(name: __MODULE__, keys: :unique)
     reload()
-    :timer.apply_interval(60000, Channel, :offload, [])
+    ## Persist channels every hour.
+    :timer.apply_interval(60 * 60 * 1000, Channel, :offload, [])
     result
   end
 
