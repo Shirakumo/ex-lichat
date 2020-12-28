@@ -81,10 +81,12 @@ defmodule Connection do
     rescue
       e in Error.ParseFailure ->
         write(state, Update.fail(Update.MalformedUpdate, e.message))
+        if state.state == nil, do: close(state), else: state
       e in Error.UnsupportedUpdate ->
         write(state, Update.fail(Update.InvalidUpdate, e.message))
       e in RuntimeError ->
         write(state, Update.fail(Update.Failure, e.message))
+        if state.state == nil, do: close(state), else: state
     end
   end
 
