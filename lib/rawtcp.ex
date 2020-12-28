@@ -18,7 +18,7 @@ defmodule RawTCP do
         end
       acc ->
         data = acc <> data
-        case :erlang.decode_packet(:line, data, [line_length: max_size]) do
+        case :erlang.decode_packet(:line, data, [line_length: max_size, line_delimiter: 0]) do
           {:ok, payload, rest} ->
             if :binary.last(payload) != 0 and byte_size(payload) == max_size do
               write(state, Update.fail(Update.UpdateTooLong))
