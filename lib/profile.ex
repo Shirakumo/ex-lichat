@@ -26,6 +26,7 @@ defmodule Profile do
   end
 
   def offload(server) do
+    Logger.info("Persisting profiles")
     File.write("profiles.dat", :erlang.term_to_binary(Agent.get(server, & &1)))
   end
 

@@ -52,10 +52,10 @@ defmodule Channel do
         {Update.ChannelInfo, true},
         {Update.SetChannelInfo, :registrant}])
 
-  ## FIXME: persist channels
   def start_link(_opts) do
     result = Registry.start_link(name: __MODULE__, keys: :unique)
     reload()
+    :timer.apply_interval(60000, Channel, :offload, [])
     result
   end
 
@@ -69,13 +69,14 @@ defmodule Channel do
         :ok
       {:error, reason} ->
         error = :file.format_error(reason)
-        Logger.error("Failed to load profiles: #{error}")
+        Logger.error("Failed to load channels: #{error}")
         {:error, error}
     end
   end
 
   def offload() do
-    channels = Enum.map(Channel.list(:pids), &data/1)
+    Logger.info("Persisting channels")
+    channels = Enum.map(Channel.list(:pids), fn channel -> %{ data(channel) | expiry: nil} end)
     File.write("channels.dat", :erlang.term_to_binary(channels))
   end
 
@@ -109,7 +110,8 @@ defmodule Channel do
   end
 
   def ensure_channel(name, permissions) do
-    ensure_channel(name, permissions, %{}, Toolkit.config(:channel_lifetime, 5))
+    ## Default lifetime is about 2 months.
+    ensure_channel(name, permissions, %{}, Toolkit.config(:channel_lifetime, 5184000))
   end
 
   def ensure_channel(name, permissions, meta, lifetime) do
@@ -286,7 +288,6 @@ defmodule Channel do
   def handle_info({:DOWN, ref, :process, pid, _reason}, channel) do
     Process.demonitor(ref)
     users = Map.delete(channel.users, pid)
-    ## FIXME: We don't currently cull channels for expiry...
     if Enum.empty?(users) and channel.lifetime != nil do
       {:ok, timer} = :timer.send_after(channel.lifetime * 1000, :expire)
       {:noreply, %{channel | users: users, expiry: timer}}
