@@ -89,11 +89,11 @@ defmodule Update do
   def from_list([symbol | args]) do
     if symbol.package == :lichat do
       case find_type(symbol) do
-        nil -> raise UnsupportedUpdate, symbol: symbol
+        nil -> raise Error.UnsupportedUpdate, symbol: symbol
         type -> Update.from_list(struct(type), args)
       end
     else
-      raise UnsupportedUpdate, symbol: symbol
+      raise Error.UnsupportedUpdate, symbol: symbol
     end
   end
 

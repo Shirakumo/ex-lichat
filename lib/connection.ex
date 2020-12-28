@@ -54,10 +54,10 @@ defmodule Connection do
             Logger.info("Connection #{inspect(self())} timed out, closing")
             close(state)
           {:timeout, n, p} ->
-            write(state, Update.make(Update.Ping))
+            write(state, Update.make(Update.Ping, []))
             %{state | state: {:timeout, n+1, p}}
           _ ->
-            write(state, Update.make(Update.Ping))
+            write(state, Update.make(Update.Ping, []))
             %{state | state: {:timeout, 1, state.state}}
         end
     end

@@ -6,7 +6,7 @@ defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :fil
       Connection.write(state, Update.fail(update, Update.BadContentType, [
                 allowed_content_types: Toolkit.config(:allowed_content_types) ]))
     else
-      case Channel.get(Channel, type.channel) do
+      case Channel.get(type.channel) do
         {:ok, channel} ->
           if User.in_channel?(state.user, channel) do
             Channel.write(channel, update)
