@@ -1,7 +1,7 @@
 use Update
 defupdate(Permissions, "PERMISSIONS", [:channel, [:permissions, required: false]]) do
   def handle(type, update, state) do
-    case Channel.get(Channel, type.channel) do
+    case Channel.get(type.channel) do
       {:ok, channel} ->
         if type.permissions != nil do
           Channel.update(channel, type.permissions)

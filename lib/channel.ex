@@ -53,48 +53,73 @@ defmodule Channel do
         {Update.SetChannelInfo, :registrant}])
 
   ## FIXME: persist channels
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+  def start_link(_opts) do
+    result = Registry.start_link(name: __MODULE__, keys: :unique)
+    reload()
+    result
   end
 
-  def get(registry, name) do
-    case Registry.lookup(registry, name) do
+  def reload() do
+    Logger.info("Reloading channels")
+    case File.read("channels.dat") do
+      {:ok, content} ->
+        Enum.each(:erlang.binary_to_term(content), fn channel ->
+          ensure_channel(channel.name, channel.permissions, channel.meta, channel.lifetime)
+        end)
+        :ok
+      {:error, reason} ->
+        error = :file.format_error(reason)
+        Logger.error("Failed to load profiles: #{error}")
+        {:error, error}
+    end
+  end
+
+  def offload() do
+    channels = Enum.map(Channel.list(:pids), &data/1)
+    File.write("channels.dat", :erlang.term_to_binary(channels))
+  end
+
+  def get(name) do
+    case Registry.lookup(__MODULE__, name) do
       [] -> :error
       [{pid, _}] -> {:ok, pid}
     end
   end
 
-  def primary(registry) do
-    {:ok, primary} = get(registry, Lichat.server_name())
+  def primary() do
+    {:ok, primary} = get(Lichat.server_name())
     primary
   end
 
-  def make(registry) do
+  def make(registrant) do
     name = anonymous_name()
-    case Channel.start_link([registry: registry, name: name, permissions: default_anonymous_channel_permissions(), lifetime: 0]) do
+    case Channel.start_link({name, evaluate_permissions(default_anonymous_channel_permissions(), registrant), %{}, 0}) do
       {:ok, pid} -> {name, pid}
       ## Not great...
-      _ -> make(registry)
+      _ -> make(registrant)
     end
   end
 
-  def ensure_channel(registry) do
-    ensure_channel(registry, Lichat.server_name(), evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()), nil)
+  def ensure_channel() do
+    ensure_channel(Lichat.server_name(), evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()), %{}, nil)
   end
 
-  def ensure_channel(registry, name, registrant, lifetime) when is_binary(registrant) do
-    ensure_channel(registry, name, evaluate_permissions(default_channel_permissions(), registrant), lifetime)
+  def ensure_channel(name, registrant) when is_binary(registrant) do
+    ensure_channel(name, evaluate_permissions(default_channel_permissions(), registrant))
   end
 
-  def ensure_channel(registry, name, permissions, lifetime) do
+  def ensure_channel(name, permissions) do
+    ensure_channel(name, permissions, %{}, Toolkit.config(:channel_lifetime, 5))
+  end
+
+  def ensure_channel(name, permissions, meta, lifetime) do
     ## FIXME: Race condition here
-    case Registry.lookup(registry, name) do
+    case Registry.lookup(Channel, name) do
       [] ->
-        {:ok, pid} = Channel.start_link([registry: registry, name: name, permissions: permissions, lifetime: lifetime])
+        {:ok, pid} = GenServer.start_link(__MODULE__, {name, permissions, meta, lifetime})
         Logger.info("New channel #{name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
-        Logger.info("Existing channel #{name} at #{inspect(pid)}")
         {:old, pid}
     end
   end
@@ -107,8 +132,12 @@ defmodule Channel do
     valid_info(symbol) and is_binary(value)
   end
 
-  def list(registry) do
-    Registry.select(registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+  def list(kind \\ :names) do
+    case kind do
+      :names -> Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [:"$1"]}])
+      :pids -> Registry.select(__MODULE__, [{{:_, :"$1", :_}, [], [:"$1"]}])
+      :values -> Registry.select(__MODULE__, [{{:_, :_, :"$1"}, [], [:"$1"]}])
+    end
   end
 
   def join(channel, user) do
@@ -132,7 +161,7 @@ defmodule Channel do
   end
 
   def permitted?(channel, update) when is_binary(channel) do
-    case Channel.get(Channel, channel) do
+    case Channel.get(channel) do
       {:ok, channel} -> permitted?(channel, update)
       :error -> true
     end
@@ -166,11 +195,15 @@ defmodule Channel do
     GenServer.cast(channel, {:info, key, value})
     channel
   end
+
+  defp data(channel) do
+    GenServer.call(channel, :data)
+  end
   
   @impl true
-  def init([registry: registry, name: name, permissions: permissions, lifetime: lifetime]) do
-    {:ok, _} = Registry.register(registry, name, nil)
-    {:ok, %Channel{name: name, permissions: permissions, lifetime: lifetime}}
+  def init({name, permissions, meta, lifetime}) do
+    {:ok, _} = Registry.register(__MODULE__, name, nil)
+    {:ok, %Channel{name: name, permissions: permissions, meta: meta, lifetime: lifetime}}
   end
   
   @impl true
@@ -215,7 +248,7 @@ defmodule Channel do
         if channel.name == Lichat.server_name() do
           {:reply, false, channel}
         else
-          {:reply, GenServer.call(Channel.primary(Channel), {:permitted?, type, user}), channel}
+          {:reply, GenServer.call(Channel.primary(), {:permitted?, type, user}), channel}
         end
     end
   end
@@ -243,6 +276,10 @@ defmodule Channel do
   @impl true
   def handle_call({:info, key}, _from, channel) do
     {:reply, channel.meta[key], channel}
+  end
+
+  def handle_call(:data, _from, channel) do
+    {:reply, channel, channel}
   end
 
   @impl true

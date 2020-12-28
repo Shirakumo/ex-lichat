@@ -14,7 +14,6 @@ defmodule Connection do
   end
   
   def run(state) do
-    ## todo: timeouting with pings
     next_state =
       receive do
       {:tcp, socket, data} ->
@@ -23,6 +22,11 @@ defmodule Connection do
           else
             %{state | socket: socket}
           end
+        ## Clear timeout
+        state = case state.state do
+                  {:timeout, _, p} -> %{state | state: p}
+                  _ -> state
+                end
         
         case state.type.handle_payload(state, data, Toolkit.config(:max_update_size, 8388608)) do
           {:ok, update, state} ->
@@ -41,6 +45,21 @@ defmodule Connection do
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
+    after 30000 ->
+        case state.state do
+          nil ->
+            ## Timeout on connect, just close.
+            shutdown(state)
+          {:timeout, 5, _} ->
+            Logger.info("Connection #{inspect(self())} timed out, closing")
+            close(state)
+          {:timeout, n, p} ->
+            write(state, Update.make(Update.Ping))
+            %{state | state: {:timeout, n+1, p}}
+          _ ->
+            write(state, Update.make(Update.Ping))
+            %{state | state: {:timeout, 1, state.state}}
+        end
     end
     if next_state.state != :closed, do: run(next_state)
   end
@@ -94,7 +113,8 @@ defmodule Connection do
     Enum.find_value([Websocket, RawTCP], nil, fn module ->
       case module.init(data, state) do
         {:ok, state} ->
-          Logger.info("New #{inspect(module)} connection")
+          {:ok, {addr, port}} = :inet.peername(state.socket)
+          Logger.info("New #{inspect(module)} connection from #{:inet_parse.ntoa(addr)}:#{port}")
           state
         :error -> nil
       end
@@ -115,12 +135,11 @@ defmodule Connection do
   end
   
   def establish(state, update) do
-    Logger.info("Connect #{inspect(update)}")
-    user = User.connect(User.ensure_user(User, update.from), self())
+    user = User.connect(User.ensure_user(update.from), self())
     write(state, Update.reply(update, Update.Connect, [
               version: Lichat.version(),
               extensions: Lichat.extensions()]))
-    Enum.each(User.channels(user), fn {channel, {_, name}} ->
+    Enum.each(User.channels(user), fn {_channel, {_ref, name}} ->
       write(state, Update.make(Update.Join, [
                 from: update.from,
                 channel: name ])) end)

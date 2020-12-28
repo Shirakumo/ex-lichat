@@ -21,7 +21,7 @@ defmodule Profile do
       {:error, reason} ->
         error = :file.format_error(reason)
         Logger.error("Failed to load profiles: #{error}")
-        {:error, reason}
+        {:error, error}
     end
   end
 
@@ -29,8 +29,8 @@ defmodule Profile do
     File.write("profiles.dat", :erlang.term_to_binary(Agent.get(server, & &1)))
   end
 
-  def lookup(server, name) do
-    case Agent.get(server, &Map.fetch(&1, name)) do
+  def lookup(name) do
+    case Agent.get(Profile, &Map.fetch(&1, name)) do
       {:ok, profile} ->
         if Toolkit.time() < profile.expiry, do: {:ok, profile}, else: :expired
       :error ->
@@ -38,8 +38,8 @@ defmodule Profile do
     end
   end
 
-  def check(server, profile) do
-    case lookup(server, profile.name) do
+  def check(profile) do
+    case lookup(profile.name) do
       {:ok, value} ->
         profile = ensure_hashed(profile)
         if value.password == profile.password, do: :ok, else: :bad_password
@@ -47,18 +47,18 @@ defmodule Profile do
     end
   end
 
-  def check(server, name, password) do
+  def check(name, password) do
     password = case password do
                  false -> nil
                  [] -> nil
                  x -> x
                end
-    check(server, %Profile{name: name, password: password})
+    check(%Profile{name: name, password: password})
   end
 
-  def register(server, profile) do
+  def register(profile) do
     profile = %{ensure_hashed(profile) | expiry: Toolkit.time()+Toolkit.config(:profile_lifetime, 60*60*24*365)}
-    Agent.update(server, &Map.put(&1, profile.name, profile))
+    Agent.update(Profile, &Map.put(&1, profile.name, profile))
   end
 
   defp ensure_hashed(profile) do

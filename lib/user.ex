@@ -3,8 +3,8 @@ defmodule User do
   use GenServer
   defstruct name: nil, connections: %{}, channels: %{}
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+  def start_link(_opts) do
+    Registry.start_link(name: __MODULE__, keys: :unique)
   end
 
   defp generate_name() do
@@ -12,31 +12,31 @@ defmodule User do
     IO.iodata_to_binary([ "Random User " | suffix ])
   end
 
-  def random_name(registry) do
+  def random_name() do
     ["Lichatter", "Random Guy", "Randy", "Chatty", "Rando", "Hoot"]
     |> Stream.concat(Stream.repeatedly(&generate_name/0))
-    |> Stream.filter(&(get(registry, &1) == :error))
+    |> Stream.filter(&(get(&1) == :error))
     |> Enum.fetch!(0)
   end
   
-  def get(registry, name) do
-    case Registry.lookup(registry, name) do
+  def get(name) do
+    case Registry.lookup(User, name) do
       [] -> :error
       [{pid, _}] -> {:ok, pid}
     end
   end
 
-  def ensure_user(registry) do
-    ensure_user(registry, Lichat.server_name())
+  def ensure_user() do
+    ensure_user(Lichat.server_name())
   end
 
-  def ensure_user(registry, name) do
+  def ensure_user(name) do
     ## FIXME: Race condition here
-    case Registry.lookup(registry, name) do
+    case Registry.lookup(__MODULE__, name) do
       [] ->
-        {:ok, pid} = User.start_link([registry: registry, name: name])
+        {:ok, pid} = GenServer.start_link(__MODULE__, [name: name])
         Logger.info("New user #{name} at #{inspect(pid)}")
-        join(pid, Channel.primary(Channel))
+        join(pid, Channel.primary())
         pid
       [{pid, _}] ->
         Logger.info("Existing user #{name} at #{inspect(pid)}")
@@ -86,8 +86,8 @@ defmodule User do
   end
 
   @impl true
-  def init([registry: registry, name: name]) do
-    {:ok, _} = Registry.register(registry, name, nil)
+  def init([name: name]) do
+    {:ok, _} = Registry.register(__MODULE__, name, nil)
     {:ok, %User{name: name}}
   end
 
@@ -121,7 +121,6 @@ defmodule User do
   @impl true
   def handle_cast({:connect, from}, user) do
     ref = Process.monitor(from)
-    Logger.info("Connecting #{inspect(from)} through #{inspect(ref)}")
     {:noreply, %{user | connections: Map.put(user.connections, from, ref)}}
   end
   
@@ -157,7 +156,7 @@ defmodule User do
         end
       Map.has_key?(user.channels, pid) ->
         {{_ref, name}, channels} = Map.pop(user.channels, pid)
-        User.write(self(), Update.make(Update.leave, [
+        User.write(self(), Update.make(Update.Leave, [
                   from: user.name,
                   channel: name ]))
         {:noreply, %{user | channels: channels}}

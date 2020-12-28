@@ -1,7 +1,7 @@
 use Update
 defupdate(Users, "USERS", [:channel, [:users, required: false]]) do
   def handle(type, update, state) do
-    case Channel.get(Channel, type.channel) do
+    case Channel.get(type.channel) do
       {:ok, channel} ->
         if User.in_channel?(state.user, channel) do
           users = Enum.map(Channel.users(channel), &User.name(&1))

@@ -1,7 +1,7 @@
 use Update
 defupdate(SetChannelInfo, "SET-CHANNEL-INFO", [:channel, :key, :text]) do
   def handle(type, update, state) do
-    case Channel.get(Channel, type.channel) do
+    case Channel.get(type.channel) do
       {:ok, channel} ->
         cond do
           not Channel.valid_info(type.key) ->

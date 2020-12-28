@@ -1,7 +1,7 @@
 use Update
 defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
   def handle(type, update, state) do
-    case Channel.get(Channel, type.channel) do
+    case Channel.get(type.channel) do
       {:ok, channel} ->
         map = if type.keys == true do
             Channel.info(channel)

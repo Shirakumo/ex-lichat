@@ -1,7 +1,7 @@
 use Update
 defupdate(Leave, "LEAVE", [:channel]) do
   def handle(type, update, state) do
-    case Channel.get(Channel, type.channel) do
+    case Channel.get(type.channel) do
       {:ok, channel} ->
         if User.in_channel?(state.user, channel) do
           Channel.write(channel, update)

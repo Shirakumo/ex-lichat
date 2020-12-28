@@ -4,7 +4,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
     case connection.state do
       nil ->
         update = if update.from in [nil, false, ""] do
-            %{update | from: User.random_name(User)}
+            %{update | from: User.random_name()}
           else update end
         cond do
           not Toolkit.valid_name?(update.from) ->
@@ -16,13 +16,13 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                     ]))
             Connection.close(connection)
           true ->
-            case Profile.check(Profile, update.from, type.password) do
+            case Profile.check(update.from, type.password) do
               :not_registered ->
                 cond do
                   is_binary(type.password) ->
                     Connection.write(connection, Update.fail(update, Update.NoSuchProfile))
                     Connection.close(connection)
-                  User.get(User, update.from) != :error ->
+                  User.get(update.from) != :error ->
                     Connection.write(connection, Update.fail(update, Update.UsernameTaken))
                     Connection.close(connection)
                   true ->
@@ -32,7 +32,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                 Connection.write(connection, Update.fail(update, Update.InvalidPassword))
                 Connection.close(connection)
               :ok ->
-                case User.get(User, update.from) do
+                case User.get(update.from) do
                   :error ->
                     Connection.establish(connection, update)
                   {:ok, user} ->
