@@ -206,7 +206,8 @@ defmodule Channel do
   @impl true
   def init({name, permissions, meta, lifetime}) do
     {:ok, _} = Registry.register(__MODULE__, name, nil)
-    {:ok, %Channel{name: name, permissions: permissions, meta: meta, lifetime: lifetime}}
+    {:ok, timer} = if lifetime == nil, do: {:ok, nil}, else: :timer.send_after(lifetime * 1000, :expire)
+    {:ok, %Channel{name: name, permissions: permissions, meta: meta, lifetime: lifetime, expiry: timer}}
   end
   
   @impl true
