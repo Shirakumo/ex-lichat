@@ -9,7 +9,7 @@ defmodule Toolkit do
   end
 
   def hashid() do
-    [s] = :ets.lookup(__MODULE__, :hashids)
+    [hashids: s] = :ets.lookup(__MODULE__, :hashids)
     Hashids.encode(s, id())
   end
 
