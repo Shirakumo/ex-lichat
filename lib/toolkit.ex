@@ -21,6 +21,19 @@ defmodule Toolkit do
     System.system_time(:second) + 2208985200
   end
 
+  def valid_name?(name) do
+    String.valid?(name)
+    and String.length(name) <= 32
+    and not String.starts_with?(name, " ")
+    and not String.ends_with?(name, " ")
+    and Enum.all?(String.codepoints(name), &valid_name_char?/1)
+  end
+
+  def valid_name_char?(char) do
+    char == " "
+    or [] != Unicode.category(char) -- [:Zl, :Zp, :Zs, :Cc, :Cf, :Co, :Cs]
+  end
+
   def config(key, default \\ nil) do
     case Application.fetch_env(:lichat, key) do
       :error -> default
