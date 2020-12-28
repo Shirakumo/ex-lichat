@@ -95,7 +95,7 @@ defmodule Channel do
 
   def make(registrant) do
     name = anonymous_name()
-    case Channel.start_link({name, evaluate_permissions(default_anonymous_channel_permissions(), registrant), %{}, 0}) do
+    case GenServer.start_link(__MODULE__, {name, evaluate_permissions(default_anonymous_channel_permissions(), registrant), %{}, 0}) do
       {:ok, pid} -> {name, pid}
       ## Not great...
       _ -> make(registrant)
