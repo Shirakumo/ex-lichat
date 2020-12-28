@@ -36,6 +36,7 @@ defmodule Channel do
         {Update.Disconnect, true},
         {Update.Ping, true},
         {Update.Pong, true},
+        {Update.Register, true},
         {Update.Permissions, :registrant},
         {Update.Create, true},
         {Update.Join, true},
