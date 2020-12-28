@@ -252,6 +252,7 @@ defmodule WireFormat do
     {:ok, stream} = StringIO.open("")
     Printer.print(stream, input)
     IO.write(stream, <<10, 0>>)
-    StringIO.flush(stream)
+    {:ok, {_, result}} = StringIO.close(stream)
+    result
   end
 end
