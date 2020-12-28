@@ -301,7 +301,7 @@ defmodule Channel do
   @impl true
   def handle_info(:expire, channel) do
     Logger.info("Channel #{channel.name} at #{inspect(self())} expired.")
-    {:stop, {:shutdown, "expired"}, channel}
+    {:stop, :normal, channel}
   end
   
   @impl true

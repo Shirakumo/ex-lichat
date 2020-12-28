@@ -65,7 +65,7 @@ defmodule Connection do
   end
 
   def handle_update(state, data) do
-    ## todo: throttling
+    ## TODO: throttling
     try do
       update = Update.parse(data)
       try do
