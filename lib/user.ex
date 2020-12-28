@@ -3,8 +3,8 @@ defmodule User do
   use GenServer
   defstruct name: nil, connections: %{}, channels: %{}
 
-  def start_link(_opts) do
-    Registry.start_link(name: __MODULE__, keys: :unique)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
   end
 
   defp generate_name() do
@@ -34,7 +34,7 @@ defmodule User do
     ## FIXME: Race condition here
     case Registry.lookup(__MODULE__, name) do
       [] ->
-        {:ok, pid} = GenServer.start_link(__MODULE__, [name: name])
+        {:ok, pid} = Users.start_child([name])
         Logger.info("New user #{name} at #{inspect(pid)}")
         join(pid, Channel.primary())
         pid
@@ -86,7 +86,7 @@ defmodule User do
   end
 
   @impl true
-  def init([name: name]) do
+  def init(name) do
     {:ok, _} = Registry.register(__MODULE__, name, nil)
     {:ok, %User{name: name}}
   end
@@ -150,7 +150,7 @@ defmodule User do
       Map.has_key?(user.connections, pid) ->
         connections = Map.delete(user.connections, pid)
         if Enum.empty?(connections) do
-          {:stop, {:shutdown, "no more connections"}, user}
+          {:stop, :normal, user}
         else
           {:noreply, %{user | connections: connections}}
         end

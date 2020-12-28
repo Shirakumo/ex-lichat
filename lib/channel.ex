@@ -52,33 +52,8 @@ defmodule Channel do
         {Update.ChannelInfo, true},
         {Update.SetChannelInfo, :registrant}])
 
-  def start_link(_opts) do
-    result = Registry.start_link(name: __MODULE__, keys: :unique)
-    reload()
-    ## Persist channels every hour.
-    :timer.apply_interval(60 * 60 * 1000, Channel, :offload, [])
-    result
-  end
-
-  def reload() do
-    Logger.info("Reloading channels")
-    case File.read("channels.dat") do
-      {:ok, content} ->
-        Enum.each(:erlang.binary_to_term(content), fn channel ->
-          ensure_channel(channel.name, channel.permissions, channel.meta, channel.lifetime)
-        end)
-        :ok
-      {:error, reason} ->
-        error = :file.format_error(reason)
-        Logger.error("Failed to load channels: #{error}")
-        {:error, error}
-    end
-  end
-
-  def offload() do
-    Logger.info("Persisting channels")
-    channels = Enum.map(Channel.list(:pids), fn channel -> %{ data(channel) | expiry: nil} end)
-    File.write("channels.dat", :erlang.term_to_binary(channels))
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
   end
 
   def get(name) do
@@ -95,7 +70,7 @@ defmodule Channel do
 
   def make(registrant) do
     name = anonymous_name()
-    case GenServer.start_link(__MODULE__, {name, evaluate_permissions(default_anonymous_channel_permissions(), registrant), %{}, 0}) do
+    case Channels.start_child([{name, evaluate_permissions(default_anonymous_channel_permissions(), registrant), %{}, 0}]) do
       {:ok, pid} -> {name, pid}
       ## Not great...
       _ -> make(registrant)
@@ -119,7 +94,7 @@ defmodule Channel do
     ## FIXME: Race condition here
     case Registry.lookup(Channel, name) do
       [] ->
-        {:ok, pid} = GenServer.start_link(__MODULE__, {name, permissions, meta, lifetime})
+        {:ok, pid} = Channels.start_child([{name, permissions, meta, lifetime}])
         Logger.info("New channel #{name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
@@ -199,7 +174,7 @@ defmodule Channel do
     channel
   end
 
-  defp data(channel) do
+  def data(channel) do
     GenServer.call(channel, :data)
   end
   

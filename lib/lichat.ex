@@ -22,8 +22,8 @@ defmodule Lichat do
       {Task.Supervisor, name: Connection.Supervisor},
       {Profile, name: Profile},
       {Emote, name: Emote},
-      {User, name: User},
-      {Channel, name: Channel},
+      {Users, name: Users},
+      {Channels, name: Channels},
       {Server,
        port: Toolkit.config(:port, 1111),
        acceptors: Toolkit.config(:acceptors, 2),
@@ -33,6 +33,7 @@ defmodule Lichat do
     opts = [strategy: :one_for_one, name: Lichat.Supervisor]
     pid = Supervisor.start_link(children, opts)
     
+    Channels.reload()
     Channel.ensure_channel()
     User.ensure_user()
     

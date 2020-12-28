@@ -114,7 +114,7 @@ defmodule Connection do
       case module.init(data, state) do
         {:ok, state} ->
           {:ok, {addr, port}} = :inet.peername(state.socket)
-          Logger.info("New #{inspect(module)} connection from #{:inet_parse.ntoa(addr)}:#{port}")
+          Logger.info("New #{inspect(module)} connection from #{:inet_parse.ntoa(addr)}:#{port} at #{inspect(self)}")
           state
         :error -> nil
       end
