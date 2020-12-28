@@ -9,7 +9,7 @@ defupdate(Create, "CREATE", [:channel]) do
       not Toolkit.valid_name?(type.channel) ->
         Connection.write(state, Update.fail(update, Update.BadName))
       true ->
-        case Channel.ensure_channel(Channel, type.channel, update.from) do
+        case Channel.ensure_channel(Channel, type.channel, update.from, Toolkit.config(:channel_lifetime, 5)) do
           {:old, _} ->
             Connection.write(state, Update.fail(update, Update.ChannelnameTaken))
           {:new, channel} ->

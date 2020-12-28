@@ -115,7 +115,7 @@ defmodule User do
   def handle_call({:join, from}, _from, user) do
     ref = Process.monitor(from)
     Channel.join(from, self())
-    {:reply, :ok, %{user | channels: Map.put(user.channels, from, ref)}}
+    {:reply, :ok, %{user | channels: Map.put(user.channels, from, {ref, Channel.name(from)})}}
   end
 
   @impl true
@@ -127,13 +127,15 @@ defmodule User do
   
   @impl true
   def handle_cast({:disconnect, from}, user) do
-    handle_info({:down, Map.get(user.connections, from), :process, from, :disconnect}, user)
+    handle_info({:DOWN, Map.get(user.connections, from), :process, from, :disconnect}, user)
   end
 
   @impl true
   def handle_cast({:leave, from}, user) do
     Channel.leave(from, self())
-    handle_info({:down, Map.get(user.channels, from), :process, from, :disconnect}, user)
+    {{ref, _name}, channels} = Map.pop(user.channels, from)
+    Process.demonitor(ref)
+    {:noreply, %{user | channels: channels}}
   end
 
   @impl true
@@ -145,12 +147,20 @@ defmodule User do
   @impl true
   def handle_info({:DOWN, ref, :process, pid, _reason}, user) do
     Process.demonitor(ref)
-    connections = Map.delete(user.connections, pid)
-    channels = Map.delete(user.channels, pid)
-    if Enum.empty?(connections) or Enum.empty?(channels) do
-      {:stop, {:shutdown, "no more connections"}, %User{}}
-    else
-      {:noreply, %{user | connections: connections, channels: channels}}
+    cond do
+      Map.has_key?(user.connections, pid) ->
+        connections = Map.delete(user.connections, pid)
+        if Enum.empty?(connections) do
+          {:stop, {:shutdown, "no more connections"}, user}
+        else
+          {:noreply, %{user | connections: connections}}
+        end
+      Map.has_key?(user.channels, pid) ->
+        {{_ref, name}, channels} = Map.pop(user.channels, pid)
+        User.write(self(), Update.make(Update.leave, [
+                  from: user.name,
+                  channel: name ]))
+        {:noreply, %{user | channels: channels}}
     end
   end
   

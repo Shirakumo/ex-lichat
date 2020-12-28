@@ -118,10 +118,10 @@ defmodule Connection do
     write(state, Update.reply(update, Update.Connect, [
               version: Lichat.version(),
               extensions: Lichat.extensions()]))
-    Enum.each(User.channels(user), fn {channel, _} ->
+    Enum.each(User.channels(user), fn {channel, {_, name}} ->
       write(state, Update.make(Update.Join, [
                 from: update.from,
-                channel: Channel.name(channel) ])) end)
+                channel: name ])) end)
     %{state | state: :connected, user: user, name: update.from}
   end
 

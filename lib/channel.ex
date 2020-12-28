@@ -1,7 +1,7 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, expiry: 0
+  defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: nil, expiry: nil
 
   def default_channel_permissions, do: Map.new([
         {Update.Permissions, :registrant},
@@ -51,7 +51,8 @@ defmodule Channel do
         {Update.Emote, :registrant},
         {Update.ChannelInfo, true},
         {Update.SetChannelInfo, :registrant}])
-  
+
+  ## FIXME: persist channels
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
@@ -70,7 +71,7 @@ defmodule Channel do
 
   def make(registry) do
     name = anonymous_name()
-    case Channel.start_link([registry: registry, name: name, permissions: default_anonymous_channel_permissions()]) do
+    case Channel.start_link([registry: registry, name: name, permissions: default_anonymous_channel_permissions(), lifetime: 0]) do
       {:ok, pid} -> {name, pid}
       ## Not great...
       _ -> make(registry)
@@ -78,18 +79,18 @@ defmodule Channel do
   end
 
   def ensure_channel(registry) do
-    ensure_channel(registry, Lichat.server_name(), evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()))
+    ensure_channel(registry, Lichat.server_name(), evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()), nil)
   end
 
-  def ensure_channel(registry, name, registrant) when is_binary(registrant) do
-    ensure_channel(registry, name, evaluate_permissions(default_channel_permissions(), registrant))
+  def ensure_channel(registry, name, registrant, lifetime) when is_binary(registrant) do
+    ensure_channel(registry, name, evaluate_permissions(default_channel_permissions(), registrant), lifetime)
   end
 
-  def ensure_channel(registry, name, permissions) do
+  def ensure_channel(registry, name, permissions, lifetime) do
     ## FIXME: Race condition here
     case Registry.lookup(registry, name) do
       [] ->
-        {:ok, pid} = Channel.start_link([registry: registry, name: name, permissions: permissions])
+        {:ok, pid} = Channel.start_link([registry: registry, name: name, permissions: permissions, lifetime: lifetime])
         Logger.info("New channel #{name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
@@ -167,9 +168,9 @@ defmodule Channel do
   end
   
   @impl true
-  def init([registry: registry, name: name, permissions: permissions]) do
+  def init([registry: registry, name: name, permissions: permissions, lifetime: lifetime]) do
     {:ok, _} = Registry.register(registry, name, nil)
-    {:ok, %Channel{name: name, permissions: permissions}}
+    {:ok, %Channel{name: name, permissions: permissions, lifetime: lifetime}}
   end
   
   @impl true
@@ -199,7 +200,10 @@ defmodule Channel do
   @impl true
   def handle_call({:join, from}, _from, channel) do
     ref = Process.monitor(from)
-    {:reply, :ok, %{channel | users: Map.put(channel.users, from, ref)}}
+    if channel.expiry != nil do
+      :timer.cancel(channel.expiry)
+    end
+    {:reply, :ok, %{channel | users: Map.put(channel.users, from, ref), expiry: nil}}
   end
 
   @impl true
@@ -246,23 +250,23 @@ defmodule Channel do
     Process.demonitor(ref)
     users = Map.delete(channel.users, pid)
     ## FIXME: We don't currently cull channels for expiry...
-    if Enum.empty?(users) and expired?(channel) do
-      {:stop, {:shutdown, "no more connections"}, %Channel{}}
+    if Enum.empty?(users) and channel.lifetime != nil do
+      {:ok, timer} = :timer.send_after(channel.lifetime * 1000, :expire)
+      {:noreply, %{channel | users: users, expiry: timer}}
     else
       {:noreply, %{channel | users: users}}
     end
+  end
+
+  @impl true
+  def handle_info(:expire, channel) do
+    Logger.info("Channel #{channel.name} at #{inspect(self())} expired.")
+    {:stop, {:shutdown, "expired"}, channel}
   end
   
   @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
-  end
-
-  defp expired?(channel) do
-    case channel.expiry do
-      nil -> nil
-      x -> Toolkit.time() < x
-    end
   end
 
   defp anonymous_name() do
