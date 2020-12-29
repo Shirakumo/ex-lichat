@@ -7,8 +7,9 @@ defmodule Server do
   end
 
   @impl true
-  def init([port: port, acceptors: acceptors, supervisor: supervisor]) do
-    tcp_options = [:binary, 
+  def init([ip: ip, port: port, acceptors: acceptors, supervisor: supervisor]) do
+    tcp_options = [:binary,
+                   ip: ip,
                    packet: :raw,
                    active: false, 
                    nodelay: true, 

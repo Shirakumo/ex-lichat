@@ -44,7 +44,7 @@ defmodule RawTCP do
   @impl Connection
   def close(state) do
     write(state, Update.make(Update.Disconnect, [
-              from: Toolkit.config(:name)
+              from: Lichat.server_name()
             ]))
     Connection.shutdown(state)
   end

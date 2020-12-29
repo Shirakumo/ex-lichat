@@ -129,7 +129,7 @@ defmodule Update do
   def make(type, args) do
     id = Keyword.get_lazy(args, :id, &Toolkit.id/0)
     clock = Keyword.get_lazy(args, :clock, &Toolkit.universal_time/0)
-    from = Keyword.get_lazy(args, :from, fn->Toolkit.config!(:name)end)
+    from = Keyword.get_lazy(args, :from, &Lichat.server_name/0)
     type = struct(type, Keyword.drop(args, [:id, :clock, :from]))
     %Update{id: id, clock: clock, from: from, type: type}
   end
