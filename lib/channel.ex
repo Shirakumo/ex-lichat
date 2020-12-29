@@ -93,7 +93,7 @@ defmodule Channel do
 
   def ensure_channel(name, permissions, meta, lifetime) do
     ## FIXME: Race condition here
-    case Registry.lookup(Channel, name) do
+    case Registry.lookup(Channel, String.lowercase(name)) do
       [] ->
         {:ok, pid} = Channels.start_child([{name, permissions, meta, lifetime}])
         Logger.info("New channel #{name} at #{inspect(pid)}")
@@ -181,7 +181,7 @@ defmodule Channel do
   
   @impl true
   def init({name, permissions, meta, lifetime}) do
-    {:ok, _} = Registry.register(__MODULE__, name, nil)
+    {:ok, _} = Registry.register(__MODULE__, String.lowercase(name), nil)
     {:ok, timer} = if lifetime == nil, do: {:ok, nil}, else: :timer.send_after(lifetime * 1000, :expire)
     {:ok, %Channel{name: name, permissions: permissions, meta: meta, lifetime: lifetime, expiry: timer}}
   end

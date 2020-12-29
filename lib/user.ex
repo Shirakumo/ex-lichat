@@ -20,7 +20,7 @@ defmodule User do
   end
   
   def get(name) do
-    case Registry.lookup(User, name) do
+    case Registry.lookup(User, String.lowercase(name)) do
       [] -> :error
       [{pid, _}] -> {:ok, pid}
     end
@@ -32,7 +32,7 @@ defmodule User do
 
   def ensure_user(name) do
     ## FIXME: Race condition here
-    case Registry.lookup(__MODULE__, name) do
+    case Registry.lookup(__MODULE__, String.lowercase(name)) do
       [] ->
         {:ok, pid} = Users.start_child([name])
         Logger.info("New user #{name} at #{inspect(pid)}")
@@ -87,7 +87,7 @@ defmodule User do
 
   @impl true
   def init(name) do
-    {:ok, _} = Registry.register(__MODULE__, name, nil)
+    {:ok, _} = Registry.register(__MODULE__, String.lowercase(name), nil)
     {:ok, %User{name: name}}
   end
 
