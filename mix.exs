@@ -22,7 +22,7 @@ defmodule Lichat.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :crypto],
+      extra_applications: [:logger, :crypto, :eldap],
       env: [profile_lifetime: 60*60*24*365,
             acceptors: 2,
             port: 1111,

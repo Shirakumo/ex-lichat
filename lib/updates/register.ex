@@ -1,7 +1,7 @@
 use Update
 defupdate(Register, "REGISTER", [:password]) do
   def handle(type, update, state) do
-    case Profile.register(%Profile{name: update.from, password: type.password}) do
+    case Profile.register(update.from, type.password) do
       :ok ->
         Connection.write(state, update)
       {:error, reason} ->

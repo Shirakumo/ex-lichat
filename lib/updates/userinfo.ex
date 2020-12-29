@@ -7,7 +7,7 @@ defupdate(UserInfo, "USER-INFO", [:target]) do
                   end
     registered = case Profile.lookup(type.target) do
                    {:ok, _} -> true
-                   :error -> false
+                   :not_registered -> false
                  end
     Connection.write(state, Update.reply(update, Update.UserInfo, [
               from: Lichat.server_name(),

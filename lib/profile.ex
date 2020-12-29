@@ -1,70 +1,70 @@
 defmodule Profile do
   require Logger
-  use Agent
-  defstruct name: nil, password: nil, expiry: nil, hashed: false
+  use Supervisor
+
+  @callback start_link(List.t) :: GenServer.on_start()
+  @callback reload(pid()) :: :ok | {:error, term()}
+  @callback lookup(pid(), String.t) :: {:ok, term()} | :expired | :not_registered
+  @callback check(pid(), String.t, String.t | nil) :: :ok | :bad_password | :expired | :not_registered
+  @callback register(pid(), String.t, String.t) :: :ok | :ignore | {:error, term()}
 
   def start_link(opts) do
-    case Agent.start_link(fn -> %{} end, opts) do
-      {:ok, pid} ->
-        reload(pid)
-        {:ok, pid}
-      x -> x
-    end
+    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def reload(server) do
-    Logger.info("Reloading profiles")
-    case File.read("profiles.dat") do
-      {:ok, content} ->
-        map = :erlang.binary_to_term(content)
-        Agent.update(server, fn(_) -> map end)
-      {:error, reason} ->
-        error = :file.format_error(reason)
-        Logger.error("Failed to load profiles: #{error}")
-        {:error, error}
-    end
+  @impl true
+  def init(_) do
+    children = Enum.map(Toolkit.config!(:profiles), &{&1, [[]]})
+    Supervisor.init(children, strategy: :one_for_one)
   end
 
-  def offload(server) do
-    Logger.info("Persisting profiles")
-    File.write("profiles.dat", :erlang.term_to_binary(Agent.get(server, & &1)))
+  def reload() do
+    find_child(fn module, pid ->
+      module.reload(pid)
+      nil
+    end, nil)
+  end
+
+  defp find_child(fun, default) do
+    case Enum.find_value(Supervisor.which_children(__MODULE__), fn {_, pid, _, [module]} ->
+          fun.(module, pid)
+        end) do
+      :ok -> :ok
+      nil -> default
+    end
   end
 
   def lookup(name) do
-    case Agent.get(Profile, &Map.fetch(&1, name)) do
-      {:ok, profile} ->
-        if Toolkit.time() < profile.expiry, do: {:ok, profile}, else: :expired
-      :error ->
-        :not_registered
-    end
-  end
-
-  def check(profile) do
-    case lookup(profile.name) do
-      {:ok, value} ->
-        profile = ensure_hashed(profile)
-        if value.password == profile.password, do: :ok, else: :bad_password
-      x -> x
-    end
+    find_child(fn module, pid ->
+      case module.lookup(pid, name) do
+        {:ok, _} -> :ok
+        _ -> nil
+      end
+    end, :not_registered)
   end
 
   def check(name, password) do
     password = case password do
-                 false -> nil
-                 [] -> nil
+                 false -> ""
+                 [] -> ""
                  x -> x
                end
-    check(%Profile{name: name, password: password})
+    find_child(fn module, pid ->
+      case module.check(pid, name, password) do
+        :ok -> :ok
+        :bad_password -> :bad_password
+        _ -> nil
+      end
+    end, :not_registered)
   end
 
-  def register(profile) do
-    profile = %{ensure_hashed(profile) | expiry: Toolkit.time()+Toolkit.config(:profile_lifetime, 60*60*24*365)}
-    Agent.update(Profile, &Map.put(&1, profile.name, profile))
+  def register(name, password) do
+    find_child(fn module, pid ->
+      case module.register(pid, name, password) do
+        :ok -> :ok
+        :ignore -> nil
+        t -> t
+      end
+    end, {:error, "Cannot register"})
   end
-
-  defp ensure_hashed(profile) do
-    if profile.hashed, do: profile, else: %{profile | password: hash(profile.password || ""), hashed: true}
-  end
-  
-  defp hash(password), do: :crypto.hash(:sha512, password)
 end
