@@ -1,7 +1,7 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: nil, expiry: nil
+  defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
 
   def default_channel_permissions, do: Map.new([
         {Update.Permissions, :registrant},
@@ -9,6 +9,9 @@ defmodule Channel do
         {Update.Leave, true},
         {Update.Kick, :registrant},
         {Update.Pull, true},
+        {Update.Quiet, :registrant},
+        {Update.Unquiet, :registrant},
+        {Update.Pause, :registrant},
         {Update.Message, true},
         {Update.Users, true},
         {Update.Channels, true},
@@ -23,6 +26,9 @@ defmodule Channel do
         {Update.Leave, true},
         {Update.Kick, :registrant},
         {Update.Pull, true},
+        {Update.Quiet, :registrant},
+        {Update.Unquiet, :registrant},
+        {Update.Pause, :registrant},
         {Update.Message, true},
         {Update.Users, false},
         {Update.Channels, false},
@@ -43,6 +49,9 @@ defmodule Channel do
         {Update.Leave, false},
         {Update.Kick, :registrant},
         {Update.Pull, false},
+        {Update.Quiet, false},
+        {Update.Unquiet, false},
+        {Update.Pause, false},
         {Update.Message, :registrant},
         {Update.Users, true},
         {Update.Channels, true},
@@ -58,7 +67,7 @@ defmodule Channel do
   end
 
   def get(name) do
-    case Registry.lookup(__MODULE__, name) do
+    case Registry.lookup(__MODULE__, String.downcase(name)) do
       [] -> :error
       [{pid, _}] -> {:ok, pid}
     end
@@ -79,7 +88,7 @@ defmodule Channel do
   end
 
   def ensure_channel() do
-    ensure_channel(Lichat.server_name(), evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()), %{}, nil)
+    ensure_channel(%Channel{name: Lichat.server_name(), permissions: evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()), lifetime: nil})
   end
 
   def ensure_channel(name, registrant) when is_binary(registrant) do
@@ -87,16 +96,15 @@ defmodule Channel do
   end
 
   def ensure_channel(name, permissions) do
-    ## Default lifetime is about 2 months.
-    ensure_channel(name, permissions, %{}, Toolkit.config(:channel_lifetime, 5184000))
+    ensure_channel(%Channel{name: name, permissions: permissions})
   end
 
-  def ensure_channel(name, permissions, meta, lifetime) do
+  def ensure_channel(channel) do
     ## FIXME: Race condition here
-    case Registry.lookup(Channel, String.lowercase(name)) do
+    case Registry.lookup(Channel, String.downcase(channel.name)) do
       [] ->
-        {:ok, pid} = Channels.start_child([{name, permissions, meta, lifetime}])
-        Logger.info("New channel #{name} at #{inspect(pid)}")
+        {:ok, pid} = Channels.start_child([channel])
+        Logger.info("New channel #{channel.name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
         {:old, pid}
@@ -131,6 +139,25 @@ defmodule Channel do
   
   def write(channel, update) do
     GenServer.cast(channel, {:send, update})
+    channel
+  end
+
+  def quiet(channel, user) when is_binary(user) do
+    GenServer.cast(channel, {:quiet, user})
+    channel
+  end
+
+  def unquiet(channel, user) when is_binary(user) do
+    GenServer.cast(channel, {:unquiet, user})
+    channel
+  end
+
+  def pause(channel) do
+    GenServer.call(channel, :pause)
+  end
+
+  def pause(channel, pause) do
+    GenServer.cast(channel, {:pause, pause})
     channel
   end
   
@@ -180,10 +207,10 @@ defmodule Channel do
   end
   
   @impl true
-  def init({name, permissions, meta, lifetime}) do
-    {:ok, _} = Registry.register(__MODULE__, String.lowercase(name), nil)
-    {:ok, timer} = if lifetime == nil, do: {:ok, nil}, else: :timer.send_after(lifetime * 1000, :expire)
-    {:ok, %Channel{name: name, permissions: permissions, meta: meta, lifetime: lifetime, expiry: timer}}
+  def init(channel) do
+    {:ok, _} = Registry.register(__MODULE__, String.downcase(channel.name), nil)
+    {:ok, timer} = if channel.lifetime == nil, do: {:ok, nil}, else: :timer.send_after(channel.lifetime * 1000, :expire)
+    {:ok, %{channel | expiry: timer}}
   end
   
   @impl true
@@ -193,8 +220,39 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:send, update}, channel) do
-    Enum.each(Map.keys(channel.users), &User.write(&1, update))
-    {:noreply, channel}
+    if MapSet.member?(channel.quiet, String.downcase(update.from)) do
+      Enum.each(Map.keys(channel.users), fn user ->
+        if User.name(user) == update.from do
+          User.write(user, update)
+        end
+      end)
+    else
+      Enum.each(Map.keys(channel.users), &User.write(&1, update))
+    end
+    if 0 < channel.pause do
+      {:noreply, %{channel | last_update: Map.put(channel.last_update, String.downcase(update.from), Toolkit.time())}}
+    else
+      {:noreply, channel}
+    end
+  end
+
+  @impl true
+  def handle_cast({:quiet, user}, channel) do
+    {:noreply, %{channel | quiet: MapSet.put(channel.quiet, String.downcase(user)) }}
+  end
+
+  @impl true
+  def handle_cast({:unquiet, user}, channel) do
+    {:noreply, %{channel | quiet: MapSet.delete(channel.quiet, String.downcase(user)) }}
+  end
+
+  @impl true
+  def handle_cast({:pause, pause}, channel) do
+    if pause <= 0 do
+      {:noreply, %{channel | pause: 0, last_update: %{}}}
+    else
+      {:noreply, %{channel | pause: pause}}
+    end
   end
 
   @impl true
@@ -221,15 +279,20 @@ defmodule Channel do
 
   @impl true
   def handle_call({:permitted?, type, user}, _from, channel) do
-    case Map.fetch(channel.permissions, type) do
-      {:ok, rule} ->
-        {:reply, Map.get_lazy(rule, String.downcase(user), fn -> Map.fetch!(rule, :default) end), channel}
-      :error ->
-        if channel.name == Lichat.server_name() do
-          {:reply, false, channel}
-        else
-          {:reply, GenServer.call(Channel.primary(), {:permitted?, type, user}), channel}
-        end
+    user = String.downcase(user)
+    if 0 < channel.pause and (Toolkit.time() - Map.get(channel.last_update, user, 0)) < channel.pause do
+      {:reply, :timeout, channel}
+    else
+      case Map.fetch(channel.permissions, type) do
+        {:ok, rule} ->
+          {:reply, Map.get_lazy(rule, user, fn -> Map.fetch!(rule, :default) end), channel}
+        :error ->
+          if channel.name == Lichat.server_name() do
+            {:reply, false, channel}
+          else
+            {:reply, GenServer.call(Channel.primary(), {:permitted?, type, user}), channel}
+          end
+      end
     end
   end
 
@@ -240,7 +303,7 @@ defmodule Channel do
   
   @impl true
   def handle_call(:users, _from, channel) do
-    {:reply, Enum.map(channel.users, fn {k, _} -> k end), channel}
+    {:reply, Map.keys(channel.users), channel}
   end
 
   @impl true

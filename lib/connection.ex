@@ -84,13 +84,14 @@ defmodule Connection do
                        nil -> %{update | from: state.name}
                        _ -> update
                      end
-            cond do
-              update.from != state.name ->
+            if update.from != state.name do
                 write(state, Update.fail(update, Update.UsernameMismatch))
-              not Update.permitted?(update) ->
-                write(state, Update.fail(update, Update.InsufficientPermissions))
-              true ->
-                Update.handle(update, state)
+            else
+              case Update.permitted?(update) do
+                false -> write(state, Update.fail(update, Update.InsufficientPermissions))
+                :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
+                true -> Update.handle(update, state)
+              end
             end
         end
       rescue

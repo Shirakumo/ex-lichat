@@ -22,7 +22,7 @@ defmodule Channels do
     case File.read("channels.dat") do
       {:ok, content} ->
         Enum.each(:erlang.binary_to_term(content), fn channel ->
-          Channel.ensure_channel(channel.name, channel.permissions, channel.meta, channel.lifetime)
+          Channel.ensure_channel(channel)
         end)
         :ok
       {:error, reason} ->
