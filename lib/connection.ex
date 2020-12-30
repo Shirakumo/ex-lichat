@@ -148,14 +148,23 @@ defmodule Connection do
   end
   
   def establish(state, update) do
+    primary = Lichat.server_name()
     user = User.connect(User.ensure_user(update.from), self())
     write(state, Update.reply(update, Update.Connect, [
+              from: update.from,
               version: Lichat.version(),
               extensions: Lichat.extensions()]))
+    write(state, Update.make(Update.Join, [
+              from: update.from,
+              channel: primary
+              ]))
     Enum.each(User.channels(user), fn {_channel, {_ref, name}} ->
-      write(state, Update.make(Update.Join, [
-                from: update.from,
-                channel: name ])) end)
+      if name != primary do
+        write(state, Update.make(Update.Join, [
+                  from: update.from,
+                  channel: name ]))
+      end
+    end)
     %{state | state: :connected, user: user, name: update.from}
   end
 
