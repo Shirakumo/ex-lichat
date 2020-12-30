@@ -18,7 +18,7 @@ defmodule Toolkit do
   end
   
   def universal_time() do
-    System.system_time(:second) + 2208985200
+    System.system_time(:second) + 2208988800
   end
 
   def valid_name?(name) do
