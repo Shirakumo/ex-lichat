@@ -1,7 +1,7 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>
+  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
@@ -64,39 +64,51 @@ defmodule Connection do
     if next_state.state != :closed, do: run(next_state)
   end
 
+  def throttle(state) do
+    {max, period} = Toolkit.config(:max_updates_per_connection)
+    time = Toolkit.time()
+    cond do
+      period <= (time - state.last_update) ->
+        {:ok, %{state | last_update: time, counter: 0}}
+      state.counter < max ->
+        {:ok, %{state | counter: state.counter + 1}}
+      true ->
+        {:error, state}
+    end
+  end
+
   def handle_update(state, data) do
-    ## TODO: throttling
     try do
       update = Update.parse(data)
-      try do
-        case state.state do
-          nil ->
-            if update.type.__struct__ == Update.Connect do
-              Update.handle(update, state)
-            else
-              write(state, Update.fail(Update.InvalidUpdate))
-              close(state)
-            end
-          :closed ->
-            close(state)
-          _ ->
-            update = case update.from do
-                       nil -> %{update | from: state.name}
-                       _ -> update
-                     end
-            if update.from != state.name do
-                write(state, Update.fail(update, Update.UsernameMismatch))
-            else
-              case Update.permitted?(update) do
-                false -> write(state, Update.fail(update, Update.InsufficientPermissions))
-                :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
-                true -> Update.handle(update, state)
+      case throttle(state) do
+        {:ok, state} ->
+          case state.state do
+            nil ->
+              if update.type.__struct__ == Update.Connect do
+                Update.handle(update, state)
+              else
+                write(state, Update.fail(Update.InvalidUpdate))
+                close(state)
               end
-            end
-        end
-      rescue
-        e in RuntimeError ->
-          write(state, Update.fail(update, Update.UpdateFailure, [text: e.message]))
+            :closed ->
+              close(state)
+            _ ->
+              update = case update.from do
+                         nil -> %{update | from: state.name}
+                         _ -> update
+                       end
+              if update.from != state.name do
+                write(state, Update.fail(update, Update.UsernameMismatch))
+              else
+                case Update.permitted?(update) do
+                  false -> write(state, Update.fail(update, Update.InsufficientPermissions))
+                  :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
+                  true -> Update.handle(update, state)
+                end
+              end
+          end
+        {:error, state} ->
+          write(state, Update.fail(update, Update.TooManyUpdates))
       end
     rescue
       e in Error.ParseFailure ->

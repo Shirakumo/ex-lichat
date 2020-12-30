@@ -6,6 +6,8 @@ config :lichat,
                           "video/webm", "video/ogg", "video/mp4",
                           "application/ogg"],
   max_connections_per_user: 20,
+  ## Allow 10 updates every 10s.
+  max_updates_per_connection: {10, 10},
   max_update_size: 8388608,
   channel_lifetime: 5184000,
   profile_lifetime: 31536000,
