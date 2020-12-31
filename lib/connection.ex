@@ -102,6 +102,7 @@ defmodule Connection do
               else
                 case Update.permitted?(update) do
                   false -> write(state, Update.fail(update, Update.InsufficientPermissions))
+                  :error -> write(state, Update.fail(update, Update.MalformedUpdate))
                   :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
                   true -> Update.handle(update, state)
                 end

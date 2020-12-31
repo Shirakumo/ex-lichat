@@ -117,11 +117,15 @@ defmodule Update do
       nil ->
         Channel.permitted?(Channel.primary(), update)
       channel ->
-        case Channel.get(channel) do
-          {:ok, channel} ->
-            Channel.permitted?(channel, update)
-          :error ->
-            Channel.permitted?(Channel.primary(), update)
+        if channel == false or channel == "" do
+          :error
+        else
+          case Channel.get(channel) do
+            {:ok, channel} ->
+              Channel.permitted?(channel, update)
+            :error ->
+              Channel.permitted?(Channel.primary(), update)
+          end
         end
     end
   end
