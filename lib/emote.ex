@@ -36,8 +36,9 @@ defmodule Emote do
   def load_emote(file) do
     case File.read(file) do
       {:ok, content} ->
+        name = Path.rootname(Path.basename(file))
         %Emote{
-          name: Path.basename(file),
+          name: name,
           type: MIME.from_path(file),
           payload: Base.encode64(content)}
       {:error, reason} ->
