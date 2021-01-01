@@ -208,9 +208,20 @@ defmodule Channel do
   
   @impl true
   def init(channel) do
+    lifetime = Map.get(channel, :lifetime, Toolkit.config(:channel_lifetime))
     {:ok, _} = Registry.register(__MODULE__, String.downcase(channel.name), nil)
-    {:ok, timer} = if channel.lifetime == nil, do: {:ok, nil}, else: :timer.send_after(channel.lifetime * 1000, :expire)
-    {:ok, %{channel | expiry: timer}}
+    {:ok, timer} = if lifetime == nil, do: {:ok, nil}, else: :timer.send_after(lifetime * 1000, :expire)
+    {:ok, %Channel{
+        name: channel.name,
+        permissions: channel.permissions,
+        users: %{},
+        meta: Map.get(channel, :meta, %{}),
+        lifetime: lifetime,
+        expiry: timer,
+        pause: Map.get(channel, :pause, 0),
+        last_update: %{},
+        quiet: Map.get(channel, :quiet, MapSet.new())
+     }}
   end
   
   @impl true
