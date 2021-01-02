@@ -13,6 +13,11 @@ defmodule Channels do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
+  def terminate(_, _) do
+    offload()
+    :normal
+  end
+
   def start_child(opts) do
     DynamicSupervisor.start_child(__MODULE__, %{id: Channel, start: {Channel, :start_link, opts}, restart: :transient})
   end
