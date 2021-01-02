@@ -8,5 +8,6 @@ defupdate(Pause, "PAUSE", [:channel, :by]) do
       :error ->
         Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
+    state
   end
 end
