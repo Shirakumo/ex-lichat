@@ -6,10 +6,10 @@ defupdate(SetChannelInfo, "SET-CHANNEL-INFO", [:channel, :key, :text]) do
         cond do
           not Channel.valid_info(type.key) ->
             Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: type.key]))
-          not Channel.valid_info(type.key, type.value) ->
+          not Channel.valid_info(type.key, type.text) ->
             Connection.write(state, Update.fail(update, Update.MalformedChannelInfo))
           true ->
-            Channel.info(channel, type.key, type.value)
+            Channel.info(channel, type.key, type.text)
             Channel.write(channel, update)
         end
       :error ->
