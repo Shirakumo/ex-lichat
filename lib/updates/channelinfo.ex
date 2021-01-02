@@ -19,6 +19,7 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
         Enum.each(map, fn {k, v} ->
           Connection.write(state, Update.reply(update, Update.SetChannelInfo, [
                     from: Lichat.server_name(),
+                    channel: type.channel,
                     key: k,
                     text: v
                   ]))
