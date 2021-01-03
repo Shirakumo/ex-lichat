@@ -1,7 +1,7 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0
+  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
@@ -79,7 +79,7 @@ defmodule Connection do
 
   def handle_update(state, data) do
     try do
-      update = Update.parse(data)
+      {state, update} = handle_clock(state, Update.parse(data))
       case throttle(state) do
         {:ok, state} ->
           case state.state do
@@ -120,6 +120,29 @@ defmodule Connection do
       e in RuntimeError ->
         write(state, Update.fail(Update.Failure, e.message))
         if state.state == nil, do: close(state), else: state
+    end
+  end
+
+  def handle_clock(state, update) do
+    time = Toolkit.universal_time()
+    cond do
+      time+1 < update.clock ->
+        if not state.skew_warned do
+          write(state, Update.fail(update, Update.ClockSkewed, [
+                    text: "Your clock is fast. You should synchronise it with a time server."]))
+        end
+        {%{state | skew_warned: true}, %{update | clock: time}}
+      update.clock < time-60 ->
+        if not state.skew_warned do
+          write(state, Update.fail(update, Update.ClockSkewed, [
+                    text: "Your clock is slow by over one minute. You should synchronise it with a time server."]))
+        end
+        {%{state | skew_warned: true}, %{update | clock: time}}
+      update.clock < time-10 ->
+        write(state, Update.fail(update, Update.ConnectionUnstable))
+        {state, update}
+      true ->
+        {state, update}
     end
   end
 
