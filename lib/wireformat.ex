@@ -154,7 +154,7 @@ defmodule WireFormat do
         ?\\-> IO.write(stream, "\\")
         x -> x
       end
-      IO.write(stream, <<c>>)
+      IO.binwrite(stream, <<c>>)
       string_(stream, rest)
     end
 
@@ -249,7 +249,7 @@ defmodule WireFormat do
   end
 
   def print1(input) do
-    {:ok, stream} = StringIO.open("")
+    {:ok, stream} = StringIO.open("",[encoding: :latin1])
     Printer.print(stream, input)
     IO.write(stream, <<10, 0>>)
     {:ok, {_, result}} = StringIO.close(stream)
