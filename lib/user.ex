@@ -114,7 +114,7 @@ defmodule User do
   @impl true
   def handle_call({:join, from}, _from, user) do
     ref = Process.monitor(from)
-    Channel.join(from, self())
+    Channel.join(from, {self(), user.name})
     {:reply, :ok, %{user | channels: Map.put(user.channels, from, {ref, Channel.name(from)})}}
   end
 

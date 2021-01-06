@@ -127,8 +127,8 @@ defmodule Channel do
     end
   end
 
-  def join(channel, user) do
-    GenServer.call(channel, {:join, user})
+  def join(channel, {user, name}) do
+    GenServer.call(channel, {:join, user, name})
     channel
   end
   
@@ -226,7 +226,14 @@ defmodule Channel do
   
   @impl true
   def handle_cast({:leave, from}, channel) do
-    handle_info({:DOWN, Map.get(channel.users, from), :process, from, :disconnect}, channel)
+    {{_name, ref}, users} = Map.pop(channel.users, from)
+    Process.demonitor(ref)
+    if Enum.empty?(users) and channel.lifetime != nil do
+      {:ok, timer} = :timer.send_after(channel.lifetime * 1000, :expire)
+      {:noreply, %{channel | users: users, expiry: timer}}
+    else
+      {:noreply, %{channel | users: users}}
+    end
   end
 
   @impl true
@@ -280,12 +287,12 @@ defmodule Channel do
   end
   
   @impl true
-  def handle_call({:join, from}, _from, channel) do
+  def handle_call({:join, from, name}, _from, channel) do
     ref = Process.monitor(from)
     if channel.expiry != nil do
       :timer.cancel(channel.expiry)
     end
-    {:reply, :ok, %{channel | users: Map.put(channel.users, from, ref), expiry: nil}}
+    {:reply, :ok, %{channel | users: Map.put(channel.users, from, {name, ref}), expiry: nil}}
   end
 
   @impl true
@@ -337,14 +344,16 @@ defmodule Channel do
   end
 
   @impl true
-  def handle_info({:DOWN, ref, :process, pid, _reason}, channel) do
-    Process.demonitor(ref)
-    users = Map.delete(channel.users, pid)
-    if Enum.empty?(users) and channel.lifetime != nil do
-      {:ok, timer} = :timer.send_after(channel.lifetime * 1000, :expire)
-      {:noreply, %{channel | users: users, expiry: timer}}
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, channel) do
+    {name, _ref} = Map.get(channel.users, pid)
+    {:noreply, channel} = handle_cast({:leave, pid}, channel)
+    if not Enum.empty?(channel.users) do
+      handle_cast({:send, Update.make(Update.Leave, [
+                          from: name,
+                          channel: channel.name
+                        ])}, channel)
     else
-      {:noreply, %{channel | users: users}}
+      {:noreply, channel}
     end
   end
 
