@@ -126,19 +126,19 @@ defmodule Connection do
   def handle_clock(state, update) do
     time = Toolkit.universal_time()
     cond do
-      time+1 < update.clock ->
+      time+10 < update.clock ->
         if not state.skew_warned do
-          write(state, Update.fail(update, Update.ClockSkewed, [
-                    text: "Your clock is fast. You should synchronise it with a time server."]))
+          write(state, Update.fail(update, Update.ClockSkewed,
+                "Your clock is fast by #{update.clock-time}. You should synchronise it with a time server."))
         end
         {%{state | skew_warned: true}, %{update | clock: time}}
       update.clock < time-60 ->
         if not state.skew_warned do
-          write(state, Update.fail(update, Update.ClockSkewed, [
-                    text: "Your clock is slow by over one minute. You should synchronise it with a time server."]))
+          write(state, Update.fail(update, Update.ClockSkewed,
+                "Your clock is slow by over one minute. You should synchronise it with a time server."))
         end
         {%{state | skew_warned: true}, %{update | clock: time}}
-      update.clock < time-10 ->
+      update.clock < time-20 ->
         write(state, Update.fail(update, Update.ConnectionUnstable))
         {state, update}
       true ->

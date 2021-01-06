@@ -152,12 +152,20 @@ defmodule Update do
     make(type, [update_id: update.id])
   end
 
-  def fail(type, message) do
+  def fail(type, message) when is_binary(message) do
     make(type, [from: Lichat.server_name(), text: message])
   end
+
+  def fail(type, args) do
+    make(type, [from: Lichat.server_name()] ++ args)
+  end
   
-  def fail(update, type, message) when is_struct(update) do
+  def fail(update, type, message) when is_struct(update) and is_binary(message) do
     make(type, [update_id: update.id, from: Lichat.server_name(), text: message])
+  end
+
+  def fail(update, type, args) when is_struct(update) do
+    make(type, [update_id: update.id, from: Lichat.server_name()] ++ args)
   end
 
   def is_update?(module) do
