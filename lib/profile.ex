@@ -46,6 +46,7 @@ defmodule Profile do
   def check(name, password) do
     password = case password do
                  false -> ""
+                 nil -> ""
                  [] -> ""
                  x -> x
                end
