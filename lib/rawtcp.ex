@@ -24,7 +24,8 @@ defmodule RawTCP do
               write(state, Update.fail(Update.UpdateTooLong))
               handle_payload(%{state | accumulator: :dropping}, rest, max_size)
             else
-              {:ok, payload, %{state | accumulator: rest}}
+              if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
+              {:ok, payload, %{state | accumulator: <<>>}}
             end
           {:more, _} ->
             {:more, %{state | accumulator: data}}
