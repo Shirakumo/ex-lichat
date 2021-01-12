@@ -50,8 +50,11 @@ defmodule Websocket do
                 {:more, %{state | accumulator: {rest, <<>>}}}
               _ ->
                 case fin do
-                  0 -> {:more, %{state | accumulator: {rest, payload}}}
-                  1 -> {:ok, payload, %{state | accumulator: {rest, <<>>}}}
+                  0 ->
+                    {:more, %{state | accumulator: {rest, payload}}}
+                  1 ->
+                    if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
+                    {:ok, payload, %{state | accumulator: {<<>>, <<>>}}}
                 end
             end
           :more ->
@@ -122,8 +125,8 @@ Sec-WebSocket-Protocol: lichat\r
     size = byte_size(data)
     cond do
       size <= 125     -> <<1::1, 0::3, opcode::4, 0::1, size::7, data::binary>>
-      size < 1 <<< 16 -> <<1::1, 0::3, opcode::4, 0::1, 126::7, byte_size(data)::16, data::binary>>
-      size < 1 <<< 64 -> <<1::1, 0::3, opcode::4, 0::1, 127::7, byte_size(data)::64, data::binary>>
+      size < 1 <<< 16 -> <<1::1, 0::3, opcode::4, 0::1, 126::7, size::16, data::binary>>
+      size < 1 <<< 64 -> <<1::1, 0::3, opcode::4, 0::1, 127::7, size::64, data::binary>>
       true -> raise "Payload too big to send in one frame."
     end
   end
