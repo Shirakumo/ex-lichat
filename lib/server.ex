@@ -11,9 +11,9 @@ defmodule Server do
     tcp_options = [:binary,
                    ip: ip,
                    packet: :raw,
-                   active: false, 
-                   nodelay: true, 
-                   keepalive: true, 
+                   active: false,
+                   nodelay: true,
+                   keepalive: true,
                    reuseaddr: true,
                    backlog: 500]
     {:ok, socket} = :gen_tcp.listen(port, tcp_options)

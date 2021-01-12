@@ -9,7 +9,7 @@ defmodule Connection do
   @callback close(Map.t) :: Map.t
 
   def start_link(socket) do
-    :inet.setopts(socket, [active: true])
+    :inet.setopts(socket, [active: true, nodelay: true])
     Task.start_link(__MODULE__, :run, [%Connection{socket: socket}])
   end
   
