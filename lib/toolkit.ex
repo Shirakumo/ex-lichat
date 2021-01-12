@@ -26,6 +26,7 @@ defmodule Toolkit do
     and String.length(name) <= 32
     and not String.starts_with?(name, " ")
     and not String.ends_with?(name, " ")
+    and String.match?(name, ~r/  /)
     and Enum.all?(String.codepoints(name), &valid_name_char?/1)
   end
 
