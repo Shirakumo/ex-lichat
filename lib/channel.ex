@@ -43,6 +43,8 @@ defmodule Channel do
         {Update.Ping, true},
         {Update.Pong, true},
         {Update.Register, true},
+        {Update.Kill, :registrant},
+        {Update.Destroy, :registrant},
         {Update.Permissions, :registrant},
         {Update.Create, true},
         {Update.Join, true},
@@ -166,6 +168,11 @@ defmodule Channel do
     channel
   end
 
+  def destroy(channel) do
+    GenServer.cast(channel, :destroy)
+    channel
+  end
+
   def permitted?(channel, update) when is_binary(channel) do
     case Channel.get(channel) do
       {:ok, channel} -> permitted?(channel, update)
@@ -284,6 +291,16 @@ defmodule Channel do
   @impl true
   def handle_cast({:info, key, value}, channel) do
     {:noreply, %{channel | meta: Map.put(channel.meta, key, value)}}
+  end
+
+  @impl true
+  def handle_cast(:destroy, channel) do
+    Enum.each(channel.users, fn {user, {name, _}} ->
+      User.write(user, Update.make(Update.Leave, [
+                channel: channel.name,
+                from: name ]))
+    end)
+    {:stop, :normal, channel}
   end
   
   @impl true

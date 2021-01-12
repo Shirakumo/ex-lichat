@@ -45,6 +45,8 @@ defmodule Connection do
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
+      :close ->
+        close(state)
     after 30000 ->
         case state.state do
           nil ->

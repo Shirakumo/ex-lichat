@@ -69,6 +69,11 @@ defmodule User do
     user
   end
 
+  def destroy(user) do
+    GenServer.cast(user, :destroy)
+    user
+  end
+
   def name(user) do
     GenServer.call(user, :name)
   end
@@ -141,6 +146,12 @@ defmodule User do
   def handle_cast({:send, update}, user) do
     Enum.each(Map.keys(user.connections), fn connection -> send(connection, {:send, update}) end)
     {:noreply, user}
+  end
+
+  @impl true
+  def handle_cast(:destroy, user) do
+    Enum.each(user.connections, fn connection -> send(connection, :close) end)
+    {:stop, :normal, user}
   end
 
   @impl true
