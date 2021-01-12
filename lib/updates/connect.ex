@@ -3,7 +3,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
   def handle(type, update, connection) do
     case connection.state do
       nil ->
-        update = if update.from in [nil, false, ""] do
+        update = if update.from in [nil, false, "", []] do
             %{update | from: User.random_name()}
           else update end
         cond do
