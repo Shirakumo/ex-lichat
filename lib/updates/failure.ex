@@ -9,7 +9,8 @@ defupdate UpdateTooLong, "UPDATE-TOO-LONG",
 defupdate ConnectionUnstable, "CONNECTION-UNSTABLE",
   [[:text, default: "The connection is unstable and may be lost soon."]]
 defupdate ClockSkewed, "CLOCK-SKEWED",
-  [[:text, default: "Your clock appears skewed. You should synchronise your clock with a time server!"]]
+  [[:update_id, symbol: "UPDATE-ID"],
+   [:text, default: "Your clock appears skewed. You should synchronise your clock with a time server!"]]
 defupdate TooManyConnections, "TOO-MANY-CONNECTIONS",
   [[:text, default: "There are too many connections for this user."]]
 defupdate UpdateFailure, "UPDATE-FAILURE",
