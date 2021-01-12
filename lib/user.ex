@@ -9,12 +9,12 @@ defmodule User do
 
   defp generate_name() do
     suffix = for _ <- 1..8, into: '', do: Enum.random('abcdefghijklmnopqrstuvwxyz0123456789')
-    IO.iodata_to_binary([ "Random User " | suffix ])
+    IO.iodata_to_binary([ "Lichatter " | suffix ])
   end
 
   def random_name() do
-    ["Lichatter", "Random Guy", "Randy", "Chatty", "Rando", "Hoot"]
-    |> Stream.concat(Stream.repeatedly(&generate_name/0))
+    ## FIXME: This is bugged due to a race condition (the name is never reserved).
+    Stream.repeatedly(&generate_name/0)
     |> Stream.filter(&(get(&1) == :error))
     |> Enum.fetch!(0)
   end
