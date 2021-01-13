@@ -21,10 +21,10 @@ defmodule Websocket do
         case :erlang.decode_packet(:http, data, []) do
           {:ok, _request, headers} ->
             case decode_headers(headers) do
-              {:ok, rest, key} ->
-                Connection.write(state, encode_http_response(key))
+              {:ok, rest, fields} ->
+                Connection.write(state, encode_http_response(fields[:key]))
                 if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
-                {:more, %{state | accumulator: {<<>>, <<>>}, state: nil}}
+                {:more, %{state | accumulator: {<<>>, <<>>}, state: nil, ip: Map.get(fields, :ip, state.ip)}}
               {:more, _} ->
                 {:more, %{state | accumulator: {data, <<>>}}}
               {:error, reason} ->
@@ -95,7 +95,7 @@ Sec-WebSocket-Protocol: lichat\r
 
   defp decode_headers({:ok, :http_eoh, rest}, state) do
     if state[:upgrade] == true and state[:connection] == true and state[:key] != nil do
-      {:ok, rest, state[:key]}
+      {:ok, rest, state}
     else
       {:error, "Missing fields"}
     end
@@ -105,7 +105,8 @@ Sec-WebSocket-Protocol: lichat\r
     state =  case field do
                'Upgrade' -> Map.put(state, :upgrade, value == 'websocket')
                'Connection' -> Map.put(state, :connection, String.contains?(List.to_string(value), "Upgrade"))
-               'Sec-WebSocket-Key' -> Map.put(state, :key, to_string(value))
+               'Sec-WebSocket-Key' -> Map.put(state, :key, List.to_string(value))
+               'X-Forwarded-For' -> Map.put(state, :ip, :inet.parse_ipv6_address(List.to_string(value)))
                _ -> state
              end
     decode_headers(rest, state)
