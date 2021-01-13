@@ -29,8 +29,8 @@ defmodule Profile do
     case Enum.find_value(Supervisor.which_children(__MODULE__), fn {_, pid, _, [module]} ->
           fun.(module, pid)
         end) do
-      :ok -> :ok
       nil -> default
+      x -> x
     end
   end
 
