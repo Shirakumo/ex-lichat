@@ -106,7 +106,7 @@ Sec-WebSocket-Protocol: lichat\r
                'Upgrade' -> Map.put(state, :upgrade, value == 'websocket')
                'Connection' -> Map.put(state, :connection, String.contains?(List.to_string(value), "Upgrade"))
                'Sec-WebSocket-Key' -> Map.put(state, :key, List.to_string(value))
-               'X-Forwarded-For' -> Map.put(state, :ip, :inet.parse_ipv6_address(List.to_string(value)))
+               'X-Forwarded-For' -> Map.put(state, :ip, :inet.parse_ipv6_address(value))
                _ -> state
              end
     decode_headers(rest, state)
