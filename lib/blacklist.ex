@@ -52,7 +52,7 @@ defmodule Blacklist do
     blacklist = Agent.get(__MODULE__, & &1)
     blacklist.ips
     |> Stream.map(fn {ip, mask} -> "ip: #{:inet_parse.ntoa(ip)} #{:inet_parse.ntoa(mask)}" end)
-    |> Stream.concat(Stream.map(blacklist.ips, fn name -> "name: #{name}" end))
+    |> Stream.concat(Stream.map(blacklist.names, fn name -> "name: #{name}" end))
     |> Stream.into(File.stream!("blacklist.txt"))
     |> Stream.run()
   end
