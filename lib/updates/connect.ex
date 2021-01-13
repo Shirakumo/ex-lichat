@@ -1,5 +1,6 @@
 use Update
 defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensions, required: false]]) do
+  require Logger
   def handle(type, update, connection) do
     case connection.state do
       nil ->
@@ -14,6 +15,10 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
             Connection.write(connection, Update.fail(update, Update.IncompatibleVersion, [
                       compatible_versions: Lichat.compatible_versions()
                     ]))
+            Connection.close(connection)
+          Blacklist.has?(update.from) ->
+            Logger.info("Connection from #{update.from} at #{:inet_parse.ntoa(connection.ip)} denied: name on blacklist")
+            Connection.write(connection, Update.fail(update, Update.TooManyConnections))
             Connection.close(connection)
           true ->
             case Profile.check(update.from, type.password) do

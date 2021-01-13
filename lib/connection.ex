@@ -1,7 +1,7 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false
+  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false, ip: nil
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
@@ -28,13 +28,15 @@ defmodule Connection do
                   _ -> state
                 end
         
-        case state.type.handle_payload(state, data, Toolkit.config(:max_update_size, 8388608)) do
+        case handle_payload(state, data) do
           {:ok, update, state} ->
             handle_update(state, update)
           {:more, state} ->
             state
           {:error, reason, state} ->
             Logger.info("Handler failure: #{reason}")
+            shutdown(state)
+          :shutdown ->
             shutdown(state)
         end
       {:tcp_closed, _} ->
@@ -149,15 +151,28 @@ defmodule Connection do
   end
 
   def init(data, state) do
-    Enum.find_value([Websocket, RawTCP], nil, fn module ->
+    {:ok, {addr, _port}} = :inet.peername(state.socket)
+    state = %{state | ip: addr}
+    Enum.find_value([Websocket, RawTCP], state, fn module ->
       case module.init(data, state) do
         {:ok, state} ->
-          {:ok, {addr, port}} = :inet.peername(state.socket)
-          Logger.info("New #{inspect(module)} connection from #{:inet_parse.ntoa(addr)}:#{port} at #{inspect(self())}")
-          state
+          if Blacklist.has?(state.ip) do
+            Logger.info("Connection from #{:inet_parse.ntoa(addr)} denied: on blacklist")
+            %{state | type: nil}
+          else
+            Logger.info("New #{inspect(module)} connection from #{:inet_parse.ntoa(state.ip)} at #{inspect(self())}")
+            state
+          end
         :error -> nil
       end
     end)
+  end
+
+  def handle_payload(state, data) do
+    case state.type do
+      nil -> :shutdown
+      _ -> state.type.handle_payload(state, data, Toolkit.config(:max_update_size, 8388608))
+    end
   end
 
   def write(state, data) when is_binary(data) do
