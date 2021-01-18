@@ -21,6 +21,20 @@ defmodule Toolkit do
     System.system_time(:second) + 2208988800
   end
 
+  def parent_name(name) do
+    case String.split(name, ~r/\/[^\/]*$/, parts: 2) do
+      [_] -> nil
+      [parent | _] -> parent
+    end
+  end
+
+  def valid_channel_name?(name) do
+    valid_name?(name)
+    and not String.starts_with?(name, "/")
+    and not String.ends_with?(name, "/")
+    and not String.match?(name, ~r/\/\//)
+  end
+
   def valid_name?(name) do
     String.valid?(name)
     and String.length(name) <= 32

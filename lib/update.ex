@@ -117,15 +117,21 @@ defmodule Update do
       nil ->
         Channel.permitted?(Channel.primary(), update)
       channel ->
-        if channel == false or channel == "" do
-          :error
-        else
-          case Channel.get(channel) do
-            {:ok, channel} ->
-              Channel.permitted?(channel, update)
-            :error ->
+        cond do
+          channel == false or channel == "" ->
+            :error
+          update.type.__struct__ == Update.Create ->
+            parent = Toolkit.parent_name(channel)
+            if parent == nil do
               Channel.permitted?(Channel.primary(), update)
-          end
+            else
+              case Channel.permitted?(parent, update) do
+                true -> true
+                :no_such_channel -> :no_such_parent
+              end
+            end
+          true ->
+            Channel.permitted?(channel, update)
         end
     end
   end

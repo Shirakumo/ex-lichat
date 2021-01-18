@@ -125,11 +125,15 @@ defmodule Channel do
     valid_info(symbol) and is_binary(value)
   end
 
-  def list(kind \\ :names) do
-    case kind do
-      :names -> Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      :pids -> Registry.select(__MODULE__, [{{:_, :"$1", :_}, [], [:"$1"]}])
-      :values -> Registry.select(__MODULE__, [{{:_, :_, :"$1"}, [], [:"$1"]}])
+  def list(:names), do: Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [{{:"$1", :"$1"}}]}])
+  def list(:pids), do: Registry.select(__MODULE__, [{{:"$1", :"$2", :_}, [], [{{:"$1", :"$2"}}]}])
+
+  def list(parent, kind \\ :names) do
+    if is_binary(parent) and parent != "" do
+      parent = parent <> "/"
+      Enum.filter(list(kind), fn {name, _val} -> String.starts_with?(name, parent) end)
+    else
+      Enum.reject(list(kind), fn {name, _val} -> String.contains?(name, "/") end)
     end
   end
 
@@ -180,7 +184,7 @@ defmodule Channel do
   def permitted?(channel, update) when is_binary(channel) do
     case Channel.get(channel) do
       {:ok, channel} -> permitted?(channel, update)
-      :error -> true
+      :error -> :no_such_channel
     end
   end
 

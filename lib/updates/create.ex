@@ -6,7 +6,7 @@ defupdate(Create, "CREATE", [:channel]) do
         {name, channel} = Channel.make(update.from)
         User.join(state.user, channel)
         Connection.write(state, Update.reply(update, Update.Join, [channel: name]))
-      not Toolkit.valid_name?(type.channel) ->
+      not Toolkit.valid_channel_name?(type.channel) ->
         Connection.write(state, Update.fail(update, Update.BadName))
       true ->
         case Channel.ensure_channel(type.channel, update.from) do

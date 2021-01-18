@@ -107,6 +107,8 @@ defmodule Connection do
                 case Update.permitted?(update) do
                   false -> write(state, Update.fail(update, Update.InsufficientPermissions))
                   :error -> write(state, Update.fail(update, Update.MalformedUpdate))
+                  :no_such_channel -> write(state, Update.fail(update, Update.NoSuchChannel))
+                  :no_such_parent -> write(state, Update.fail(update, Update.NoSuchParentChannel))
                   :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
                   true -> Update.handle(update, state)
                 end
