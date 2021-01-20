@@ -407,8 +407,14 @@ defmodule Channel do
     {:reply, channel.meta[key], channel}
   end
 
+  @impl true
   def handle_call(:data, _from, channel) do
     {:reply, channel, channel}
+  end
+
+  @impl true
+  def handle_call(:pause, _from, channel) do
+    {:reply, channel.pause, channel}
   end
 
   @impl true
