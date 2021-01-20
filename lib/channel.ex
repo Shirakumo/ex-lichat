@@ -176,6 +176,16 @@ defmodule Channel do
     channel
   end
 
+  def grant(channel, user, update) do
+    GenServer.cast(channel, {:grant, user, update})
+    channel
+  end
+
+  def deny(channel, user, update) do
+    GenServer.cast(channel, {:deny, user, update})
+    channel
+  end
+
   def destroy(channel) do
     GenServer.cast(channel, :destroy)
     channel
@@ -294,6 +304,28 @@ defmodule Channel do
       {Update.find_type(type_symbol), compile_rule(perm)}
     end)
     {:noreply, %{channel | permissions: perms}}
+  end
+
+  @impl true
+  def handle_cast({:grant, user, update}, channel) do
+    rule = Map.get(channel.permissions, update, %{:default => true})
+    rule = if Map.fetch!(rule, :default) do
+      Map.delete(rule, user)
+    else
+      Map.put(rule, user, true)
+    end
+    {:noreply, %{channel | permissions: Map.put(channel.permissions, update, rule)}}
+  end
+
+  @impl true
+  def handle_cast({:deny, user, update}, channel) do
+    rule = Map.get(channel.permissions, update, %{:default => true})
+    rule = if Map.fetch!(rule, :default) do
+      Map.put(rule, user, false)
+    else
+      Map.delete(rule, user)
+    end
+    {:noreply, %{channel | permissions: Map.put(channel.permissions, update, rule)}}
   end
 
   @impl true
