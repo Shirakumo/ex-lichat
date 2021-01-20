@@ -8,6 +8,8 @@ defupdate(Join, "JOIN", [:channel]) do
         else
           User.join(state.user, channel)
           Channel.write(channel, update)
+          pause = Channel.pause(channel)
+          if 0 < pause, do: Connection.write(state, Update.make(Pause, by: pause))
         end
       :error ->
         Connection.write(state, Update.fail(update, Update.NoSuchChannel))
