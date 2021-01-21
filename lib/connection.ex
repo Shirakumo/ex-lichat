@@ -112,7 +112,6 @@ defmodule Connection do
 
   def handle_update(state, data) do
     try do
-      {state, update} = handle_clock(state, Update.parse(data))
       case throttle(state) do
         {:ok, state} ->
           case state.state do
@@ -126,6 +125,7 @@ defmodule Connection do
             :closed ->
               close(state)
             _ ->
+              {state, update} = handle_clock(state, Update.parse(data))
               update = case update.from do
                          nil -> %{update | from: state.name}
                          _ -> update
