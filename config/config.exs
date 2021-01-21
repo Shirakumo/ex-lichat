@@ -18,11 +18,7 @@ config :lichat,
   ## Around 1 year of lifetime before expiry.
   profile_lifetime: 31536000,
   ## Listen on all local IPs.
-  ip: {0,0,0,0},
-  ## Default port for unsafe (no-SSL) connections.
-  port: 1111,
-  ## Spawn two TCP acceptor processes
-  acceptors: 2,
+  listen: [[ip: {0,0,0,0}, port: 1111, acceptors: 2]],
   ## The server name to use. This will occupy the server user and channel.
   server_name: "Lichat",
   ## The profile authorities to use.

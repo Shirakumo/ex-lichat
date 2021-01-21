@@ -7,7 +7,12 @@ defmodule Server do
   end
 
   @impl true
-  def init([ip: ip, port: port, acceptors: acceptors, supervisor: supervisor]) do
+  def init([listeners: listeners, supervisor: supervisor]) do
+    children = Enum.concat(Enum.map(listeners, &start_listener(&1, supervisor)))
+    Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  defp start_listener([ip: ip, port: port, acceptors: acceptors], supervisor) do
     tcp_options = [:binary,
                    ip: ip,
                    packet: :raw,
@@ -17,12 +22,10 @@ defmodule Server do
                    reuseaddr: true,
                    backlog: 500]
     {:ok, socket} = :gen_tcp.listen(port, tcp_options)
-    children = Enum.map(1..acceptors, fn (i) ->
+    Logger.info("Accepting connections on port #{inspect(ip)}:#{port}")
+    Enum.map(1..acceptors, fn (i) ->
       Supervisor.child_spec({Task, fn -> accept(supervisor, socket) end}, id: {Task, i})
     end)
-    
-    Logger.info("Accepting connections on port #{port}")
-    Supervisor.init(children, strategy: :one_for_one)
   end
 
   defp accept(supervisor, socket) do
