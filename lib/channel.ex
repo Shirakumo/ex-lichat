@@ -430,7 +430,8 @@ defmodule Channel do
         else
           {:noreply, channel}
         end
-      nil -> nil
+      nil ->
+        {:noreply, channel}
     end
   end
 
