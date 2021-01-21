@@ -1,46 +1,50 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false, ip: nil
+  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false, ip: nil, ssl: false
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
   @callback write(Map.t, Map.t) :: Map.t
   @callback close(Map.t) :: Map.t
 
-  def start_link(socket) do
-    :inet.setopts(socket, [active: true, nodelay: true])
-    Task.start_link(__MODULE__, :run, [%Connection{socket: socket}])
+  def start_link([socket: socket, ssl: ssl]) do
+    opts = [active: true, nodelay: true]
+    if ssl do
+      :ssl.setopts(socket, opts)
+      Task.start_link(__MODULE__, :handshake_ssl, [%Connection{socket: socket, ssl: true}])
+    else
+      :inet.setopts(socket, opts)
+      Task.start_link(__MODULE__, :run, [%Connection{socket: socket, ssl: false}])
+    end
+  end
+
+  def handshake_ssl(state) do
+    case :ssl.handshake(state.socket) do
+      {:ok, socket, _} ->
+        run(%{state | socket: socket})
+      {:ok, socket} ->
+        run(%{state | socket: socket})
+      {:error, reason} ->
+        Logger.info("SSL handshake failed for #{inspect(self())}: #{inspect(reason)}")
+    end
   end
   
   def run(state) do
     next_state =
       receive do
+      {:ssl, socket, data} ->
+        handle_data(socket, data, state)
       {:tcp, socket, data} ->
-        state = if state.type == nil do
-            init(data, %{state | socket: socket})
-          else
-            %{state | socket: socket}
-          end
-        ## Clear timeout
-        state = case state.state do
-                  {:timeout, _, p} -> %{state | state: p}
-                  _ -> state
-                end
-        
-        case handle_payload(state, data) do
-          {:ok, update, state} ->
-            handle_update(state, update)
-          {:more, state} ->
-            state
-          {:error, reason, state} ->
-            Logger.info("Handler failure: #{reason}")
-            shutdown(state)
-          :shutdown ->
-            shutdown(state)
-        end
+        handle_data(socket, data, state)
+      {:ssl_closed, _} ->
+        Logger.info("SSL closed #{inspect(self())} #{inspect(state.user)}")
+        %{state | state: :closed}
       {:tcp_closed, _} ->
         Logger.info("TCP closed #{inspect(self())} #{inspect(state.user)}")
+        %{state | state: :closed}
+      {:ssl_error, _, _} ->
+        Logger.info("SSL error #{inspect(self())} #{inspect(state.user)}")
         %{state | state: :closed}
       {:tcp_error, _} ->
         Logger.info("TCP error #{inspect(self())} #{inspect(state.user)}")
@@ -66,6 +70,31 @@ defmodule Connection do
         end
     end
     if next_state.state != :closed, do: run(next_state)
+  end
+
+  def handle_data(socket, data, state) do
+    state = if state.type == nil do
+      init(data, %{state | socket: socket})
+    else
+      %{state | socket: socket}
+    end
+    ## Clear timeout
+    state = case state.state do
+              {:timeout, _, p} -> %{state | state: p}
+              _ -> state
+            end
+    
+    case handle_payload(state, data) do
+      {:ok, update, state} ->
+        handle_update(state, update)
+      {:more, state} ->
+        state
+      {:error, reason, state} ->
+        Logger.info("Handler failure: #{reason}")
+        shutdown(state)
+      :shutdown ->
+        shutdown(state)
+    end
   end
 
   def throttle(state) do
@@ -178,7 +207,11 @@ defmodule Connection do
   end
 
   def write(state, data) when is_binary(data) do
-    :gen_tcp.send(state.socket, data)
+    if state.ssl do
+      :ssl.send(state.socket, data)
+    else
+      :gen_tcp.send(state.socket, data)
+    end
     state
   end
 
@@ -212,7 +245,11 @@ defmodule Connection do
   end
 
   def shutdown(state) do
-    :gen_tcp.shutdown(state.socket, :write)
+    if state.ssl do
+      :ssl.shutdown(state.socket, :write)
+    else
+      :gen_tcp.shutdown(state.socket, :write)
+    end
     %{state | state: :closed}
   end
 end
