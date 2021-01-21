@@ -419,15 +419,18 @@ defmodule Channel do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, channel) do
-    {name, _ref} = Map.get(channel.users, pid, {nil, nil})
-    {:noreply, channel} = handle_cast({:leave, pid}, channel)
-    if name != nil and not Enum.empty?(channel.users) do
-      handle_cast({:send, Update.make(Update.Leave, [
-                          from: name,
-                          channel: channel.name
-                        ])}, channel)
-    else
-      {:noreply, channel}
+    case Map.get(channel.users, pid) do
+      {name, _ref} ->
+        {:noreply, channel} = handle_cast({:leave, pid}, channel)
+        if not Enum.empty?(channel.users) do
+          handle_cast({:send, Update.make(Update.Leave, [
+                              from: name,
+                              channel: channel.name
+                            ])}, channel)
+        else
+          {:noreply, channel}
+        end
+      nil -> nil
     end
   end
 
