@@ -22,7 +22,7 @@ defmodule Server do
                    reuseaddr: true,
                    backlog: 500]
     {:ok, socket} = :gen_tcp.listen(port, tcp_options)
-    Logger.info("Accepting connections on port #{inspect(ip)}:#{port}")
+    Logger.info("Accepting connections on #{:inet_parse.ntoa(ip)}:#{port}")
     Enum.map(1..acceptors, fn (i) ->
       Supervisor.child_spec({Task, fn -> accept(supervisor, socket) end}, id: {Task, i})
     end)

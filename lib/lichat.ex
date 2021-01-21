@@ -28,7 +28,7 @@ defmodule Lichat do
       {Emote, name: Emote},
       {Blacklist, name: Blacklist},
       {Server,
-       listeners: Toolkit.config(:listeners, []),
+       listeners: Toolkit.config(:listen, []),
        supervisor: Connection.Supervisor}
     ]
 
