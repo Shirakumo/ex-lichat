@@ -134,7 +134,8 @@ defmodule WireFormat do
       |> parsec(:expr)
       |> ignore(repeat(white))
     object =
-      ignore(string("("))
+      ignore(repeat(white))
+      |> ignore(string("("))
       |> ignore(repeat(white))
       |> concat(symbol)
       |> ignore(repeat(white))
