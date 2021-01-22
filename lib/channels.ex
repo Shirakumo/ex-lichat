@@ -24,6 +24,7 @@ defmodule Channels do
 
   def reload() do
     Logger.info("Reloading channels")
+    ## FIXME: ensure capabilities are updated if new update types are introduced.
     case File.read(Toolkit.config(:channel_file)) do
       {:ok, content} ->
         Enum.each(:erlang.binary_to_term(content), fn channel ->

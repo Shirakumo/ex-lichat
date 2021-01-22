@@ -4,6 +4,7 @@ defmodule Channel do
   defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
 
   def default_channel_permissions, do: Map.new([
+        {Update.Capabilities, true},
         {Update.ChannelInfo, true},
         {Update.Channels, true},
         {Update.Create, :registrant},
@@ -25,6 +26,7 @@ defmodule Channel do
       ])
 
   def default_anonymous_channel_permissions, do: Map.new([
+        {Update.Capabilities, true},
         {Update.ChannelInfo, false},
         {Update.Channels, false},
         {Update.Data, true},
@@ -46,6 +48,7 @@ defmodule Channel do
 
   def default_primary_channel_permissions, do: Map.new([
         {Update.Ban, :registrant},
+        {Update.Capabilities, true},
         {Update.ChannelInfo, true},
         {Update.Channels, true},
         {Update.Connect, true},
