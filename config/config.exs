@@ -23,7 +23,15 @@ config :lichat,
   ## The server name to use. This will occupy the server user and channel.
   server_name: "Lichat",
   ## The profile authorities to use.
-  profiles: [LDAPProfile, LocalProfile]
+  profiles: [LDAPProfile, LocalProfile],
+  ## Directory with emote files
+  emote_directory: "emotes/",
+  ## File to store profile data in
+  profile_file: "profiles.dat",
+  ## File to store channel data in
+  channel_file: "channels.dat",
+  ## File to store blacklist data in
+  blacklist_file: "blacklist.txt"
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

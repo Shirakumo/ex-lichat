@@ -18,7 +18,7 @@ defmodule Blacklist do
   def reload() do
     Logger.info("Reloading blacklist")
     try do
-      blacklist = File.stream!("blacklist.txt")
+      blacklist = File.stream!(Toolkit.config(:blacklist_file))
       |> Stream.map(&String.trim/1)
       |> Stream.map(fn line ->
         cond do
@@ -53,7 +53,7 @@ defmodule Blacklist do
     blacklist.ips
     |> Stream.map(fn {ip, mask} -> "ip: #{:inet_parse.ntoa(ip)} #{:inet_parse.ntoa(mask)}" end)
     |> Stream.concat(Stream.map(blacklist.names, fn name -> "name: #{name}" end))
-    |> Stream.into(File.stream!("blacklist.txt"))
+    |> Stream.into(File.stream!(Toolkit.config(:blacklist_file)))
     |> Stream.run()
   end
 

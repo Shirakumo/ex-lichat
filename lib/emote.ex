@@ -14,9 +14,10 @@ defmodule Emote do
 
   def reload(server) do
     Logger.info("Reloading emotes")
-    case File.ls("emotes/") do
+    dir = Toolkit.config(:emote_directory)
+    case File.ls(dir) do
       {:ok, files} -> 
-        emotes = Map.new(Enum.reject(Enum.map(files, &load_emote("emotes/" <> &1)), &(&1 == nil)), &{&1.name, &1})
+        emotes = Map.new(Enum.reject(Enum.map(files, &load_emote(dir <> &1)), &(&1 == nil)), &{&1.name, &1})
         Agent.update(server, fn _ -> emotes end)
         emotes
       {:error, reason} ->

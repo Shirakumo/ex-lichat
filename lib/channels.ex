@@ -24,7 +24,7 @@ defmodule Channels do
 
   def reload() do
     Logger.info("Reloading channels")
-    case File.read("channels.dat") do
+    case File.read(Toolkit.config(:channel_file)) do
       {:ok, content} ->
         Enum.each(:erlang.binary_to_term(content), fn channel ->
           Channel.ensure_channel(channel)
@@ -40,6 +40,6 @@ defmodule Channels do
   def offload() do
     Logger.info("Persisting channels")
     channels = Enum.map(Channel.list(:pids), fn {_, channel} -> %{ Channel.data(channel) | users: %{}, expiry: nil} end)
-    File.write("channels.dat", :erlang.term_to_binary(channels))
+    File.write(Toolkit.config(:channel_file), :erlang.term_to_binary(channels))
   end
 end

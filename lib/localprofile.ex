@@ -17,7 +17,7 @@ defmodule LocalProfile do
   @impl Profile
   def reload(server) do
     Logger.info("Reloading profiles")
-    case File.read("profiles.dat") do
+    case File.read(Toolkit.config(:profile_file)) do
       {:ok, content} ->
         map = :erlang.binary_to_term(content)
         Agent.update(server, fn(_) -> map end)
@@ -31,7 +31,7 @@ defmodule LocalProfile do
 
   def offload(server) do
     Logger.info("Persisting profiles")
-    File.write("profiles.dat", :erlang.term_to_binary(Agent.get(server, & &1)))
+    File.write(Toolkit.config(:profile_file), :erlang.term_to_binary(Agent.get(server, & &1)))
   end
 
   @impl Profile
