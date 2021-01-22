@@ -1,5 +1,6 @@
 use Update
 defupdate(Create, "CREATE", [:channel]) do
+  require Logger
   def handle(type, update, state) do
     cond do
       type.channel in [false, nil, ""] ->
@@ -13,6 +14,7 @@ defupdate(Create, "CREATE", [:channel]) do
           {:old, _} ->
             Connection.write(state, Update.fail(update, Update.ChannelnameTaken))
           {:new, channel} ->
+            Logger.info("#{update.from} created #{type.channel}", [intent: :user])
             User.join(state.user, channel)
             Connection.write(state, Update.reply(update, Update.Join, [channel: type.channel]))
         end

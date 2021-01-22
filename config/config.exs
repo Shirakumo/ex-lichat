@@ -25,4 +25,8 @@ config :lichat,
   ## The profile authorities to use.
   profiles: [LDAPProfile, LocalProfile]
 
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:intent]
+
 import_config "secret.exs"

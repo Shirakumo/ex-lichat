@@ -1,0 +1,6 @@
+# ExLichat
+This is a future implementation of a "Lichat"(https://shirakumo.github.io/lichat) server.
+
+
+; TODO: Keep server stats of when IPs connect and with which names, etc.
+; TODO: Expose these stats through an extra interface.
