@@ -86,7 +86,7 @@ defmodule Connection do
     
     case handle_payload(state, data) do
       {:ok, data, state} ->
-        handle_update(state, Update.parse(data))
+        handle_update(state, data)
       {:more, state} ->
         state
       {:error, reason, state} ->
@@ -110,8 +110,9 @@ defmodule Connection do
     end
   end
 
-  def handle_update(state, update) do
+  def handle_update(state, data) do
     try do
+      update = Update.parse(data)
       case throttle(state) do
         {:ok, state} ->
           case state.state do
