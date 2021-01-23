@@ -1,7 +1,7 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
+  defstruct name: nil, registrant: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
 
   def default_channel_permissions, do: Map.new([
         {Update.Capabilities, true},
@@ -99,24 +99,30 @@ defmodule Channel do
   end
 
   def make(registrant) do
-    name = anonymous_name()
-    case Channels.start_child([{name, evaluate_permissions(default_anonymous_channel_permissions(), registrant), %{}, 0}]) do
-      {:ok, pid} -> {name, pid}
+    channel = %Channel{
+      name: anonymous_name(),
+      permissions: evaluate_permissions(default_anonymous_channel_permissions(), registrant),
+      lifetime: 1}
+    case Channels.start_child([channel]) do
+      {:ok, pid} -> {channel.name, pid}
       ## Not great...
       _ -> make(registrant)
     end
   end
 
   def ensure_channel() do
-    ensure_channel(%Channel{name: Lichat.server_name(), permissions: evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()), lifetime: nil})
+    ensure_channel(%Channel{
+          name: Lichat.server_name(),
+          registrant: Lichat.server_name(),
+          permissions: evaluate_permissions(default_primary_channel_permissions(), Lichat.server_name()),
+          lifetime: nil})
   end
 
-  def ensure_channel(name, registrant) when is_binary(registrant) do
-    ensure_channel(name, evaluate_permissions(default_channel_permissions(), registrant))
-  end
-
-  def ensure_channel(name, permissions) do
-    ensure_channel(%Channel{name: name, permissions: permissions})
+  def ensure_channel(name, registrant) do
+    ensure_channel(%Channel{
+          name: name,
+          registrant: registrant,
+          permissions: evaluate_permissions(default_channel_permissions(), registrant)})
   end
 
   def ensure_channel(channel) do
@@ -247,12 +253,19 @@ defmodule Channel do
   
   @impl true
   def init(channel) do
-    lifetime = Map.get(channel, :lifetime, Toolkit.config(:channel_lifetime))
+    lifetime = channel.lifetime
+    registrant = Map.get(channel, :registrant, Lichat.server_name())
+    def_permissions = if registrant == Lichat.server_name() do
+      evaluate_permissions(default_primary_channel_permissions(), registrant)
+    else
+      evaluate_permissions(default_channel_permissions(), registrant)
+    end
     {:ok, _} = Registry.register(__MODULE__, String.downcase(channel.name), nil)
     {:ok, timer} = if lifetime == nil, do: {:ok, nil}, else: :timer.send_after(lifetime * 1000, :expire)
     {:ok, %Channel{
         name: channel.name,
-        permissions: channel.permissions,
+        registrant: registrant,
+        permissions: Map.merge(def_permissions, channel.permissions),
         users: %{},
         meta: Map.get(channel, :meta, %{}),
         lifetime: lifetime,

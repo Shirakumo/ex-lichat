@@ -24,7 +24,6 @@ defmodule Channels do
 
   def reload() do
     Logger.info("Reloading channels")
-    ## FIXME: ensure capabilities are updated if new update types are introduced.
     case File.read(Toolkit.config(:channel_file)) do
       {:ok, content} ->
         Enum.each(:erlang.binary_to_term(content), fn channel ->
@@ -40,7 +39,9 @@ defmodule Channels do
 
   def offload() do
     Logger.info("Persisting channels")
-    channels = Enum.map(Channel.list(:pids), fn {_, channel} -> %{ Channel.data(channel) | users: %{}, expiry: nil} end)
+    channels = Channel.list(:pids)
+    |> Enum.map(fn {_, channel} -> %{ Channel.data(channel) | users: %{}, expiry: nil} end)
+    |> Enum.filter(fn channel -> channel.lifetime == nil or 10 < channel.lifetime end)
     File.write(Toolkit.config(:channel_file), :erlang.term_to_binary(channels))
   end
 end
