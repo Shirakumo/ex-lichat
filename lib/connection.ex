@@ -53,6 +53,8 @@ defmodule Connection do
         write(state, msg)
       :close ->
         close(state)
+      {:data, src} ->
+        send src, {:data, state}
     after 30000 ->
         case state.state do
           nil ->
@@ -252,5 +254,12 @@ defmodule Connection do
       :gen_tcp.shutdown(state.socket, :write)
     end
     %{state | state: :closed}
+  end
+
+  def data(connection) do
+    send {:data, self()}, connection
+    receive do
+      {:data, data} -> data
+    end
   end
 end
