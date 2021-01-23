@@ -4,3 +4,4 @@ This is a future implementation of a "Lichat"(https://shirakumo.github.io/lichat
 
 ; TODO: Keep server stats of when IPs connect and with which names, etc.
 ; TODO: Expose these stats through an extra interface.
+; TODO: Track and limit connections per IP
