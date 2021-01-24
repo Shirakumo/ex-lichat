@@ -43,7 +43,7 @@ defmodule Channel do
         {Update.Quiet, :registrant},
         {Update.SetChannelInfo, false},
         {Update.Unquiet, :registrant},
-        {Update.Users, false},
+        {Update.Users, true},
       ])
 
   def default_primary_channel_permissions, do: Map.new([
