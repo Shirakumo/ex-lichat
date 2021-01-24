@@ -1,5 +1,5 @@
 use Update
-defupdate(Create, "CREATE", [:channel]) do
+defupdate(Create, "CREATE", [[:channel, required: false]]) do
   require Logger
   def handle(type, update, state) do
     cond do
