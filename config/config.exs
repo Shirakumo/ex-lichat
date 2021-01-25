@@ -13,6 +13,8 @@ config :lichat,
   max_updates_per_connection: {10, 10},
   ## Around 8 MB max limit.
   max_update_size: 8388608,
+  ## Keep the last 100 updates.
+  channel_backlog: 100,
   ## Around 2 months of lifetime before expiry.
   channel_lifetime: 5184000,
   ## Around 1 year of lifetime before expiry.

@@ -1,7 +1,21 @@
 # ExLichat
-This is a future implementation of a "Lichat"(https://shirakumo.github.io/lichat) server.
+This is an implementation of a "Lichat"(https://shirakumo.github.io/lichat) server.
 
+## Supported Extensions
+In addition to the core protocol, ExLichat also supports many of the specified extensions:
 
+- shirakumo-backfill
+- shirakumo-channel-info
+- shirakumo-channel-trees
+- shirakumo-data
+- shirakumo-edit
+- shirakumo-emotes
+- shirakumo-ip
+- shirakumo-pause
+- shirakumo-quiet
+- shirakumo-server-management
+
+; TODO: implement bridge, link, markup, user-info extensions
 ; TODO: Keep server stats of when IPs connect and with which names, etc.
 ; TODO: Expose these stats through an extra interface.
 ; TODO: Track and limit connections per IP

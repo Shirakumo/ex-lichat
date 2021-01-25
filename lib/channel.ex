@@ -1,9 +1,10 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, registrant: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
+  defstruct name: nil, registrant: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new(), backlog: nil
 
   def default_channel_permissions, do: Map.new([
+        {Update.Backfill, true},
         {Update.Capabilities, true},
         {Update.ChannelInfo, true},
         {Update.Channels, true},
@@ -26,6 +27,7 @@ defmodule Channel do
       ])
 
   def default_anonymous_channel_permissions, do: Map.new([
+        {Update.Backfill, false},
         {Update.Capabilities, true},
         {Update.ChannelInfo, false},
         {Update.Channels, false},
@@ -47,6 +49,7 @@ defmodule Channel do
       ])
 
   def default_primary_channel_permissions, do: Map.new([
+        {Update.Backfill, false},
         {Update.Ban, :registrant},
         {Update.Capabilities, true},
         {Update.ChannelInfo, true},
@@ -272,13 +275,18 @@ defmodule Channel do
         expiry: timer,
         pause: Map.get(channel, :pause, 0),
         last_update: %{},
-        quiet: Map.get(channel, :quiet, MapSet.new())
+        quiet: Map.get(channel, :quiet, MapSet.new()),
+        backlog: if Map.get(channel, :backlog, nil) == nil do
+          Backlog.new(Toolkit.config(:channel_backlog))
+        else
+          channel.backlog
+        end
      }}
   end
   
   @impl true
   def handle_cast({:leave, from}, channel) do
-    {{_name, ref}, users} = Map.pop(channel.users, from)
+    {{_name, ref, _time}, users} = Map.pop(channel.users, from)
     Process.demonitor(ref)
     if Enum.empty?(users) and channel.lifetime != nil do
       {:ok, timer} = :timer.send_after(channel.lifetime * 1000, :expire)
@@ -299,11 +307,15 @@ defmodule Channel do
     else
       Enum.each(Map.keys(channel.users), &User.write(&1, update))
     end
-    if 0 < channel.pause do
-      {:noreply, %{channel | last_update: Map.put(channel.last_update, String.downcase(update.from), Toolkit.time())}}
-    else
-      {:noreply, channel}
-    end
+    {:noreply,
+     %{channel |
+       last_update: if 0 < channel.pause do
+         Map.put(channel.last_update, String.downcase(update.from), Toolkit.universal_time())
+       else
+         channel.last_update
+       end,
+       backlog: Backlog.push(channel.backlog, update)
+     }}
   end
 
   @impl true
@@ -372,11 +384,15 @@ defmodule Channel do
   
   @impl true
   def handle_call({:join, from, name}, _from, channel) do
-    ref = Process.monitor(from)
-    if channel.expiry != nil do
-      :timer.cancel(channel.expiry)
+    if Map.has_key?(channel.users, from) do
+      channel
+    else
+      ref = Process.monitor(from)
+      if channel.expiry != nil do
+        :timer.cancel(channel.expiry)
+      end
+      {:reply, :ok, %{channel | users: Map.put(channel.users, from, {name, ref, Toolkit.universal_time()}), expiry: nil}}
     end
-    {:reply, :ok, %{channel | users: Map.put(channel.users, from, {name, ref}), expiry: nil}}
   end
 
   @impl true
@@ -436,7 +452,7 @@ defmodule Channel do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, channel) do
     case Map.get(channel.users, pid) do
-      {name, _ref} ->
+      {name, _ref, _join} ->
         {:noreply, channel} = handle_cast({:leave, pid}, channel)
         if not Enum.empty?(channel.users) do
           handle_cast({:send, Update.make(Update.Leave, [
