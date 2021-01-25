@@ -11,7 +11,8 @@ defupdate(ServerInfo, "SERVER-INFO", [:target]) do
         connections = User.connections(user)
         |> Enum.map(fn {connection, _} ->
           data = Connection.data(connection)
-          [[%Symbol{package: "shirakumo", name: "ip"}, :inet_parse.ntoa(data.ip)],
+          [[%Symbol{package: "lichat", name: "connected-on"}, data.started_on],
+           [%Symbol{package: "shirakumo", name: "ip"}, :inet_parse.ntoa(data.ip)],
            [%Symbol{package: "shirakumo", name: "ssl"}, data.ssl]]
         end)
         Connection.write(state, Update.make(Update.ServerInfo, [

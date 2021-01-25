@@ -1,7 +1,7 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false, ip: nil, ssl: false
+  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false, ip: nil, ssl: false, started_on: Toolkit.universal_time()
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
