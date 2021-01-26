@@ -6,7 +6,9 @@ defmodule LDAPProfile do
   @impl Profile
   def start_link(opts) do
     Agent.start_link(fn ->
-      connect(config(:bind_dn), config(:bind_pw))
+      connection = connect(config(:bind_dn), config(:bind_pw))
+      Logger.info("Connected to LDAP server at #{inspect(config(:host))}")
+      connection
     end, opts)
   end
 
@@ -56,6 +58,7 @@ defmodule LDAPProfile do
 
   defp find({:ok, conn, _, _}, dn) do
     case :eldap.search(conn,
+          filter: :eldap.present(:binary.bin_to_list(config(:account_identifier))),
           base: :binary.bin_to_list(dn),
           scope: :eldap.baseObject) do
       {:ok, {:eldap_search_result, [entry], _}} -> {:ok, entry}
