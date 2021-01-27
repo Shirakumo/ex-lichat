@@ -19,3 +19,4 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 ; TODO: Keep server stats of when IPs connect and with which names, etc.
 ; TODO: Expose these stats through an extra interface.
 ; TODO: Track and limit connections per IP
+; TODO: send disconnect when connection process terminates from application shutdown
