@@ -29,11 +29,11 @@ config :lichat,
   ## Directory with emote files
   emote_directory: "emotes/",
   ## File to store profile data in
-  profile_file: "profiles.dat",
+  profile_file: "config/profiles.dat",
   ## File to store channel data in
-  channel_file: "channels.dat",
+  channel_file: "config/channels.dat",
   ## File to store blacklist data in
-  blacklist_file: "blacklist.txt"
+  blacklist_file: "config/blacklist.txt",
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
