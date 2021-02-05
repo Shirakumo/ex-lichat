@@ -21,6 +21,10 @@ defmodule Toolkit do
     System.system_time(:second) + 2208988800
   end
 
+  def banner() do
+    File.read!(config(:banner_file))
+  end
+
   def parent_name(name) do
     case String.split(name, ~r/\/[^\/]*$/, parts: 2) do
       [_] -> nil

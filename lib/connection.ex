@@ -237,6 +237,11 @@ defmodule Connection do
               from: update.from,
               channel: primary
               ]))
+    write(state, Update.make(Update.Message, [
+              from: primary,
+              channel: primary,
+              text: Toolkit.banner()
+              ]))
     Enum.each(User.channels(user), fn {_channel, {_ref, name}} ->
       if name != primary do
         write(state, Update.make(Update.Join, [

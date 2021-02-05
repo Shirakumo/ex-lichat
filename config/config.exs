@@ -34,6 +34,8 @@ config :lichat,
   channel_file: "config/channels.dat",
   ## File to store blacklist data in
   blacklist_file: "config/blacklist.txt",
+  ## File to store banner in
+  banner_file: "config/banner.txt"
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
