@@ -140,14 +140,14 @@ defmodule Channel do
     end
   end
 
-  def valid_info(symbol) do
+  def valid_info?(symbol) do
     Symbol.is_symbol(symbol)
     and symbol.package == :keyword
     and Enum.member?(["NEWS", "TOPIC", "RULES", "CONTACT"], symbol.name)
   end
 
-  def valid_info(symbol, value) do
-    valid_info(symbol) and is_binary(value)
+  def valid_info?(symbol, value) do
+    valid_info?(symbol) and is_binary(value)
   end
 
   def list(:names), do: Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [{{:"$1", :"$1"}}]}])
