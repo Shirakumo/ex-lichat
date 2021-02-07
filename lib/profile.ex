@@ -14,7 +14,8 @@ defmodule Profile do
 
   @impl true
   def init(_) do
-    children = Enum.map(Toolkit.config!(:profiles), &{&1, [[]]})
+    modules = Toolkit.push_new(Toolkit.config!(:profiles), LocalProfile)
+    children = Enum.map(modules, &{&1, [[]]})
     Supervisor.init(children, strategy: :one_for_one)
   end
 
@@ -27,7 +28,11 @@ defmodule Profile do
 
   defp find_child(fun, default) do
     case Enum.find_value(Supervisor.which_children(__MODULE__), fn {_, pid, _, [module]} ->
-          fun.(module, pid)
+          if module in Toolkit.config!(:profiles) do
+            fun.(module, pid)
+          else
+            nil
+          end
         end) do
       nil -> default
       x -> x
