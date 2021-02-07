@@ -3,6 +3,10 @@ defmodule Toolkit do
     :ets.new(__MODULE__, [:public, :named_table])
     :ets.insert(__MODULE__, {:hashids, Hashids.new([salt: config(:salt, ""), min_len: 5])})
   end
+
+  def ip(ip) when is_binary(ip), do: ip
+  def ip(ip) when is_list(ip), do: List.to_string(ip)
+  def ip(ip) when is_tuple(ip), do: ip(:inet_parse.ntoa(ip))
   
   def id() do
     :ets.update_counter(__MODULE__, :lichatID, 1, {1, 0})
