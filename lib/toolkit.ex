@@ -63,7 +63,7 @@ defmodule Toolkit do
       symbol == %Symbol{package: "KEYWORD", name: "ICON"} ->
         case String.split(value) do
           [ type, b64 ] ->
-            Enum.member?(Toolkit.config!(:allowed_icon_content_types, type))
+            Enum.member?(Toolkit.config!(:allowed_icon_content_types), type)
             and String.length(b64) <= Toolkit.config!(:max_icon_size)
           _ -> false
         end

@@ -7,7 +7,7 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
             Channel.info(channel)
           else
             keys = Enum.filter(type.keys, fn k ->
-              if Channel.valid_info(k) do
+              if Channel.valid_info?(k) do
                 true
               else
                 Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: k]))
