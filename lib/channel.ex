@@ -171,17 +171,29 @@ defmodule Channel do
     GenServer.cast(channel, {:leave, user})
     channel
   end
-  
+
+  def write(channel, update) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    write(channel, update)
+  end
   def write(channel, update) do
     GenServer.cast(channel, {:send, update})
     channel
   end
 
+  def quiet(channel, user) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    quiet(channel, user)
+  end
   def quiet(channel, user) when is_binary(user) do
     GenServer.cast(channel, {:quiet, user})
     channel
   end
 
+  def unquiet(channel, user) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    unquiet(channel, user)
+  end
   def unquiet(channel, user) when is_binary(user) do
     GenServer.cast(channel, {:unquiet, user})
     channel
@@ -191,26 +203,46 @@ defmodule Channel do
     GenServer.call(channel, :pause)
   end
 
+  def pause(channel, pause) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    pause(channel, pause)
+  end
   def pause(channel, pause) do
     GenServer.cast(channel, {:pause, pause})
     channel
   end
   
+  def update(channel, permissions) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    update(channel, permissions)
+  end
   def update(channel, permissions) do
     GenServer.cast(channel, {:permissions, permissions})
     channel
   end
 
+  def grant(channel, user, update) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    grant(channel, user, update)
+  end
   def grant(channel, user, update) do
     GenServer.cast(channel, {:grant, user, update})
     channel
   end
 
+  def deny(channel, user, update) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    deny(channel, user, update)
+  end
   def deny(channel, user, update) do
     GenServer.cast(channel, {:deny, user, update})
     channel
   end
 
+  def destroy(channel) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    destroy(channel)
+  end
   def destroy(channel) do
     GenServer.cast(channel, :destroy)
     channel
