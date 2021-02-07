@@ -2,7 +2,7 @@ use Update
 defupdate(UserInfo, "USER-INFO", [:target]) do
   def handle(type, update, state) do
     connections = case User.get(type.target) do
-                    {:ok, user} -> Enum.count(user.connections)
+                    {:ok, user} -> Enum.count(User.connections(user))
                     :error -> 0
                   end
     registered = case Profile.lookup(type.target) do
