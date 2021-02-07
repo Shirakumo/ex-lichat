@@ -15,7 +15,7 @@ defmodule Profile do
   @impl true
   def init(_) do
     modules = Toolkit.push_new(Toolkit.config!(:profiles), LocalProfile)
-    children = Enum.map(modules, &{&1, [[]]})
+    children = Enum.map(modules, &Supervisor.child_spec({&1, [name: &1]}, id: &1))
     Supervisor.init(children, strategy: :one_for_one)
   end
 
@@ -39,8 +39,29 @@ defmodule Profile do
     end
   end
 
+  def valid_info?(symbol) do
+    Symbol.is_symbol(symbol)
+    and symbol.package == :keyword
+    and Enum.member?(["BIRTHDAY", "CONTACT", "LOCATION", "PUBLIC-KEY", "REAL-NAME", "STATUS", "ICON"], symbol.name)
+  end
+
+  def valid_info?(symbol, value) do
+    Toolkit.valid_info?(symbol, value)
+  end
+
+  def info(name) do
+    name = String.downcase(name)
+    LocalProfile.info(LocalProfile, name)
+  end
+
+  def info(name, key, value) do
+    name = String.downcase(name)
+    LocalProfile.ensure(LocalProfile, name)
+    LocalProfile.info(LocalProfile, name, key, value)
+  end
+
   def lookup(name) do
-    name = String.lower(name)
+    name = String.downcase(name)
     find_child(fn module, pid ->
       case module.lookup(pid, name) do
         {:ok, _} -> :ok
@@ -56,7 +77,7 @@ defmodule Profile do
                  [] -> ""
                  x -> x
                end
-    name = String.lower(name)
+    name = String.downcase(name)
     find_child(fn module, pid ->
       case module.check(pid, name, password) do
         :ok -> :ok
@@ -67,7 +88,7 @@ defmodule Profile do
   end
 
   def register(name, password) do
-    name = String.lower(name)
+    name = String.downcase(name)
     find_child(fn module, pid ->
       case module.register(pid, name, password) do
         :ok -> :ok

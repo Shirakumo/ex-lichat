@@ -6,6 +6,10 @@ config :lichat,
                           "audio/webm", "audio/ogg", "audio/mpeg", "audio/mp3", "audio/mp4", "audio/flac",
                           "video/webm", "video/ogg", "video/mp4",
                           "application/ogg"],
+  ## Which mime-type should be allowed for profile or channel icons.
+  allowed_icon_content_types: ["image/png", "image/gif"],
+  ## The maximum size of an icon (~1MB)
+  max_icon_size: 1048576,
   ## How many connections a single user can have simultaneously.
   ## Note that this is not counted per-ip, but rather per-account.
   max_connections_per_user: 20,

@@ -2,7 +2,7 @@ defmodule LocalProfile do
   @behaviour Profile
   require Logger
   use Agent
-  defstruct name: nil, password: nil, expiry: nil
+  defstruct name: nil, password: nil, expiry: Toolkit.time()+Toolkit.config(:profile_lifetime, 60*60*24*365), info: %{}
 
   @impl Profile
   def start_link(opts) do
@@ -34,6 +34,29 @@ defmodule LocalProfile do
     File.write(Toolkit.config(:profile_file), :erlang.term_to_binary(Agent.get(server, & &1)))
   end
 
+  def info(server, name) do
+    case Agent.get(server, &Map.fetch(&1, name)) do
+      {:ok, profile} -> profile.info
+      :error -> :not_registered
+    end
+  end
+
+  def info(server, name, key, value) do
+    Agent.update(server, fn map ->
+      if Map.has_key?(map, name) do
+        Map.update!(map, name, &%{&1 | info: Map.put(&1.info, key, value)})
+      else
+        map
+      end
+    end)
+  end
+
+  def ensure(server, name) do
+    Agent.update(server, fn map ->
+      Map.put_new(map, name, %LocalProfile{name: name})
+    end)
+  end
+
   @impl Profile
   def lookup(server, name) do
     case Agent.get(server, &Map.fetch(&1, name)) do
@@ -55,7 +78,7 @@ defmodule LocalProfile do
 
   @impl Profile
   def register(server, name, password) do
-    profile = %LocalProfile{name: name, password: hash(password), expiry: Toolkit.time()+Toolkit.config(:profile_lifetime, 60*60*24*365)}
+    profile = %LocalProfile{name: name, password: hash(password)}
     Agent.update(server, &Map.put(&1, profile.name, profile))
     :ok
   end

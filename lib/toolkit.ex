@@ -57,6 +57,20 @@ defmodule Toolkit do
     or [] != Unicode.category(char) -- [:Zl, :Zp, :Zs, :Cc, :Cf, :Co, :Cs]
   end
 
+  def valid_info?(symbol, value) do
+    is_binary(value)
+    and cond do
+      symbol == %Symbol{package: "KEYWORD", name: "ICON"} ->
+        case String.split(value) do
+          [ type, b64 ] ->
+            Enum.member?(Toolkit.config!(:allowed_icon_content_types, type))
+            and String.length(b64) <= Toolkit.config!(:max_icon_size)
+          _ -> false
+        end
+      true -> true
+    end
+  end
+
   def config(key, default \\ nil) do
     case Application.fetch_env(:lichat, key) do
       :error -> default
@@ -92,6 +106,14 @@ defmodule Toolkit do
       is_binary(key) -> key
       is_atom(key) -> String.upcase(Atom.to_string(key))
       is_struct(key) -> key.name
+    end
+  end
+
+  def push_new(list, value) do
+    if Enum.member?(list, value) do
+      list
+    else
+      [ value | list ]
     end
   end
 end

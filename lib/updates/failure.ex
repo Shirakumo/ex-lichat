@@ -82,3 +82,10 @@ defupdate NoSuchChannelInfo, "NO-SUCH-CHANNEL-INFO",
 defupdate MalformedChannelInfo, "MALFORMED-CHANNEL-INFO",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "The specified info was not of the correct format for the key."]]
+defupdate NoSuchUserInfo, "NO-SUCH-USER-INFO",
+  [[:update_id, symbol: "UPDATE-ID"],
+   [:text, default: "The requested user info key does not exist."],
+   :key]
+defupdate MalformedUserInfo, "MALFORMED-USER-INFO",
+  [[:update_id, symbol: "UPDATE-ID"],
+   [:text, default: "The specified info was not of the correct format for the key."]]

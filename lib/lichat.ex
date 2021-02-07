@@ -8,7 +8,8 @@ defmodule Lichat do
 
   def extensions, do: ["shirakumo-data", "shirakumo-emotes", "shirakumo-edit", "shirakumo-channel-info",
                        "shirakumo-pause", "shirakumo-quiet", "shirakumo-server-management", "shirakumo-ip",
-                       "shirakumo-channel-trees", "shirakumo-backfill"]
+                       "shirakumo-channel-trees", "shirakumo-backfill", "shirakumo-user-info",
+                       "shirakumo-icon"]
   
   def compatible?(version) do
     Enum.member?(compatible_versions(), version)

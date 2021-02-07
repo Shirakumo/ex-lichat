@@ -10,12 +10,14 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 - shirakumo-data
 - shirakumo-edit
 - shirakumo-emotes
+- shirakumo-icon
 - shirakumo-ip
 - shirakumo-pause
 - shirakumo-quiet
 - shirakumo-server-management
+- shirakumo-user-info
 
-; TODO: implement bridge, link, markup, user-info extensions
+; TODO: implement bridge, link, markup, shared-identity extensions
 ; TODO: Keep server stats of when IPs connect and with which names, etc.
 ; TODO: Expose these stats through an extra interface.
 ; TODO: Track and limit connections per IP

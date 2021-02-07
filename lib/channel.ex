@@ -79,6 +79,7 @@ defmodule Channel do
         {Update.Quiet, false},
         {Update.Register, true},
         {Update.SetChannelInfo, :registrant},
+        {Update.SetUserInfo, true},
         {Update.Unban, :registrant},
         {Update.Unquiet, false},
         {Update.UserInfo, true},
@@ -143,11 +144,11 @@ defmodule Channel do
   def valid_info?(symbol) do
     Symbol.is_symbol(symbol)
     and symbol.package == :keyword
-    and Enum.member?(["NEWS", "TOPIC", "RULES", "CONTACT"], symbol.name)
+    and Enum.member?(["NEWS", "TOPIC", "RULES", "CONTACT", "ICON"], symbol.name)
   end
 
   def valid_info?(symbol, value) do
-    valid_info?(symbol) and is_binary(value)
+    Toolkit.valid_info?(symbol, value)
   end
 
   def list(:names), do: Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [{{:"$1", :"$1"}}]}])
