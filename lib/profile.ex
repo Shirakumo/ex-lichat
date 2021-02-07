@@ -40,6 +40,7 @@ defmodule Profile do
   end
 
   def lookup(name) do
+    name = String.lower(name)
     find_child(fn module, pid ->
       case module.lookup(pid, name) do
         {:ok, _} -> :ok
@@ -55,6 +56,7 @@ defmodule Profile do
                  [] -> ""
                  x -> x
                end
+    name = String.lower(name)
     find_child(fn module, pid ->
       case module.check(pid, name, password) do
         :ok -> :ok
@@ -65,6 +67,7 @@ defmodule Profile do
   end
 
   def register(name, password) do
+    name = String.lower(name)
     find_child(fn module, pid ->
       case module.register(pid, name, password) do
         :ok -> :ok
