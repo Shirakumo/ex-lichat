@@ -44,7 +44,9 @@ defmodule LocalProfile do
   def info(server, name, key, value) do
     Agent.update(server, fn map ->
       if Map.has_key?(map, name) do
-        Map.update!(map, name, &%{&1 | info: Map.put(&1.info, key, value)})
+        result = Map.update!(map, name, &%{&1 | info: Map.put(&1.info, key, value)})
+        offload(server)
+        result
       else
         map
       end
@@ -79,7 +81,11 @@ defmodule LocalProfile do
   @impl Profile
   def register(server, name, password) do
     profile = %LocalProfile{name: name, password: hash(password)}
-    Agent.update(server, &Map.put(&1, profile.name, profile))
+    Agent.update(server, fn map ->
+      result = Map.put(map, profile.name, profile)
+      offload(server)
+      result
+    end)
     :ok
   end
   
