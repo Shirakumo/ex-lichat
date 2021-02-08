@@ -17,7 +17,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                     ]))
             Connection.close(connection)
           Blacklist.has?(update.from) ->
-            Logger.info("Connection from #{update.from} at #{:inet_parse.ntoa(connection.ip)} denied: name on blacklist")
+            Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: name on blacklist")
             Connection.write(connection, Update.fail(update, Update.TooManyConnections))
             Connection.close(connection)
           true ->
@@ -34,6 +34,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                     Connection.establish(connection, update)
                 end
               :bad_password ->
+                Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: invalid password")
                 Connection.write(connection, Update.fail(update, Update.InvalidPassword))
                 Connection.close(connection)
               :ok ->

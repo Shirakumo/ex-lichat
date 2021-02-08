@@ -90,6 +90,7 @@ defmodule LDAPProfile do
     case connect(dn(name), password) do
       {:ok, conn, _, _} ->
         :eldap.close(conn)
+        Logger.info("Successfully authenticated #{name} against LDAP")
         :ok
       _ ->
         case lookup(server, name) do
