@@ -55,6 +55,7 @@ defmodule Connection do
         close(state)
       {:data, src} ->
         send src, {:data, state}
+        state
     after 30000 ->
         case state.state do
           nil ->
