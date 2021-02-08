@@ -40,6 +40,12 @@ defmodule Lichat do
     Channel.ensure_channel()
     User.ensure_user()
     
+    System.at_exit(fn _ ->
+      Channels.offload()
+      Blacklist.offload()
+      LocalProfile.offload()
+    end)
+
     pid
   end
 end
