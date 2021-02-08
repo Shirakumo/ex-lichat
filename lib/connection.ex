@@ -262,7 +262,7 @@ defmodule Connection do
   end
 
   def data(connection) do
-    send {:data, self()}, connection
+    send connection, {:data, self()}
     receive do
       {:data, data} -> data
     end
