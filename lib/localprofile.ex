@@ -8,6 +8,7 @@ defmodule LocalProfile do
   def start_link(opts) do
     case Agent.start_link(fn -> %{} end, opts) do
       {:ok, pid} ->
+        :timer.apply_interval(60 * 60 * 1000, Channels, :offload, [pid])
         reload(pid)
         {:ok, pid}
       x -> x
