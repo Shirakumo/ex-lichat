@@ -6,7 +6,12 @@ defmodule Toolkit do
 
   def ip(ip) when is_binary(ip), do: ip
   def ip(ip) when is_list(ip), do: List.to_string(ip)
-  def ip(ip) when is_tuple(ip), do: ip(:inet_parse.ntoa(ip))
+  def ip(ip) when is_tuple(ip) do
+    case :inet_parse.ntoa(ip) do
+      {:error, _} -> inspect(ip)
+      ip -> ip(ip)
+    end
+  end
   
   def id() do
     :ets.update_counter(__MODULE__, :lichatID, 1, {1, 0})
