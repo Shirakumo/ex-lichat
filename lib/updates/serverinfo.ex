@@ -11,11 +11,7 @@ defupdate(ServerInfo, "SERVER-INFO", [:target, [:attributes, optional: true], [:
           
         connections = User.connections(user)
         |> Enum.map(fn {connection, _} ->
-          data = if connection != self() do
-              Connection.data(connection)
-            else
-              state
-            end
+          data = Connection.data(state, connection)
           [[%Symbol{package: "lichat", name: "connected-on"}, data.started_on],
            [%Symbol{package: "shirakumo", name: "ip"}, Toolkit.ip(data.ip)],
            [%Symbol{package: "shirakumo", name: "ssl"}, data.ssl]]

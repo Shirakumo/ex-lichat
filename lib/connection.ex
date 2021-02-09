@@ -53,7 +53,7 @@ defmodule Connection do
         write(state, msg)
       :close ->
         close(state)
-      {:data, src} ->
+      {:get_data, src} ->
         send src, {:data, state}
         state
     after 30000 ->
@@ -263,9 +263,20 @@ defmodule Connection do
   end
 
   def data(connection) do
-    send connection, {:data, self()}
-    receive do
-      {:data, data} -> data
+    if self() == connection do
+      raise "Can't request own data."
+    end
+    send connection, {:get_data, self()}
+      receive do
+        {:data, data} -> data
+      end
+  end
+
+  def data(state, connection) do
+    if self() == connection do
+      state
+    else
+      data(connection)
     end
   end
 end
