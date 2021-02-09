@@ -78,6 +78,7 @@ defmodule Channel do
         {Update.Pull, false},
         {Update.Quiet, false},
         {Update.Register, true},
+        {Update.ServerInfo, :registrant},
         {Update.SetChannelInfo, :registrant},
         {Update.SetUserInfo, true},
         {Update.Unban, :registrant},
