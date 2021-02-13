@@ -43,7 +43,7 @@ defmodule Lichat do
     System.at_exit(fn _ ->
       Channels.offload()
       Blacklist.offload()
-      LocalProfile.offload()
+      LocalProfile.offload(LocalProfile)
     end)
 
     pid
