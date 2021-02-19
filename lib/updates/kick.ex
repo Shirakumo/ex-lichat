@@ -7,7 +7,7 @@ defupdate(Kick, "KICK", [:channel, :target]) do
         cond do
           not User.in_channel?(state.user, channel) ->
             Connection.write(state, Update.fail(update, Update.NotInChannel))
-          not User.in_channel?(state.target, channel) ->
+          not User.in_channel?(type.target, channel) ->
             Connection.write(state, Update.fail(update, Upadet.NotInChannel))
           true ->
             Logger.info("#{update.from} kicked #{type.target} from #{type.channel}", [intent: :user])
