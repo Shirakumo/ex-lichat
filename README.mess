@@ -22,3 +22,15 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 ; TODO: Expose these stats through an extra interface.
 ; TODO: Track and limit connections per IP
 ; TODO: send disconnect when connection process terminates from application shutdown
+
+## How To
+Setting up a Lichat server is very simple.
+
+::
+pacman -S elixir
+git clone https://github.com/shirakumo/ex-lichat
+cd ex-lichat
+iex -S mix
+::
+
+You can configure and override settings from the "config"(config/config.exs) in the config/secret.exs file.
