@@ -1,12 +1,15 @@
 use Update
-defupdate(Message, "MESSAGE", [:channel, :text]) do
+defupdate(Message, "MESSAGE", [:channel, :text, [:bridge, optional: true]]) do
   def handle(type, update, state) do
     case Channel.get(type.channel) do
       {:ok, channel} ->
-        if User.in_channel?(state.user, channel) do
-          Channel.write(channel, update)
-        else
-          Connection.write(state, Update.fail(update, Update.NotInChannel))
+        cond do
+          not User.in_channel?(state.user, channel) ->
+            Connection.write(state, Update.fail(update, Update.NotInChannel))
+          type.bridge != nil ->
+            Update.Bridge.bridge(type, update, state, channel)
+          true->
+            Channel.write(channel, update)
         end
       :error ->
         Connection.write(state, Update.fail(update, Update.NoSuchChannel))

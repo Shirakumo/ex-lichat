@@ -5,6 +5,7 @@ defmodule Channel do
 
   def default_channel_permissions, do: Map.new([
         {Update.Backfill, true},
+        {Update.Bridge, :registrant},
         {Update.Capabilities, true},
         {Update.ChannelInfo, true},
         {Update.Channels, true},
@@ -28,6 +29,7 @@ defmodule Channel do
 
   def default_anonymous_channel_permissions, do: Map.new([
         {Update.Backfill, false},
+        {Update.Bridge, :registrant},
         {Update.Capabilities, true},
         {Update.ChannelInfo, false},
         {Update.Channels, false},
@@ -51,6 +53,7 @@ defmodule Channel do
   def default_primary_channel_permissions, do: Map.new([
         {Update.Backfill, false},
         {Update.Ban, :registrant},
+        {Update.Bridge, :registrant},
         {Update.Capabilities, true},
         {Update.ChannelInfo, true},
         {Update.Channels, true},
@@ -259,6 +262,10 @@ defmodule Channel do
 
   def permitted?(channel, update) do
     GenServer.call(channel, {:permitted?, update.type.__struct__, update.from})
+  end
+
+  def permitted?(channel, type, user) do
+    GenServer.call(channel, {:permitted?, type, user})
   end
 
   def name(channel) do
