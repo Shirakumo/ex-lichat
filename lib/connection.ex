@@ -1,7 +1,19 @@
 defmodule Connection do
   use Task
   require Logger
-  defstruct type: nil, socket: nil, user: nil, name: nil, state: nil, accumulator: <<>>, counter: 0, last_update: 0, skew_warned: false, ip: nil, ssl: false, started_on: Toolkit.universal_time()
+  defstruct type: nil,
+    socket: nil,
+    user: nil,
+    name: nil,
+    state: nil,
+    accumulator: <<>>,
+    counter: 0,
+    last_update: 0,
+    skew_warned: false,
+    ip: nil,
+    ssl: false,
+    started_on: Toolkit.universal_time(),
+    identities: %{}
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
@@ -56,6 +68,13 @@ defmodule Connection do
       {:get_data, src} ->
         send src, {:data, state}
         state
+      {:DOWN, _ref, :process, pid, _reason} ->
+        case Map.pop(state.identities, pid) do
+          {nil, _} -> state
+          {{name, ref}, map} ->
+            Process.demonitor(ref)
+            %{state | identities: Map.drop(map, name)}
+        end
     after 30000 ->
         case state.state do
           nil ->
@@ -278,5 +297,9 @@ defmodule Connection do
     else
       data(connection)
     end
+  end
+
+  def remove_identity(connection) do
+    send connection, {:DOWN, nil, :process, self(), :identity_removed}
   end
 end

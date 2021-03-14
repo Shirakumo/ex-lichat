@@ -34,6 +34,13 @@ defmodule Toolkit do
     File.read!(config(:banner_file))
   end
 
+  def random_key(length \\ 32) do
+    fn -> Enum.random('abcdefghijklmnopqrstuvwxyz0123456789') end
+    |> Stream.repeatedly()
+    |> Enum.take(length)
+    |> to_string()
+  end
+
   def parent_name(name) do
     case String.split(name, ~r/\/[^\/]*$/, parts: 2) do
       [_] -> nil

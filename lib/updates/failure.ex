@@ -89,3 +89,5 @@ defupdate NoSuchUserInfo, "NO-SUCH-USER-INFO",
 defupdate MalformedUserInfo, "MALFORMED-USER-INFO",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "The specified info was not of the correct format for the key."]]
+defupdate IdentityAlreadyUsed, "IDENTITY-ALREADY-USED",
+  [[:text, default: "The specified identity key is invalid or has been used already."]]

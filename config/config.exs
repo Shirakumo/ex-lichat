@@ -15,6 +15,8 @@ config :lichat,
   max_connections_per_user: 20,
   ## Allow 10 updates every 10s.
   max_updates_per_connection: {10, 10},
+  ## Restrict users to 10 share keys.
+  max_shares_per_user: 10,
   ## Around 8 MB max limit.
   max_update_size: 8388608,
   ## Keep the last 100 updates.
