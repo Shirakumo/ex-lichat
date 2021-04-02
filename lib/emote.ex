@@ -27,6 +27,10 @@ defmodule Emote do
     end
   end
 
+  def emote?(server, string) do
+    Agent.get(server, fn list -> Enum.find(list, &(&1.name == string)) end)
+  end
+
   def list(server) do
     case Agent.get(server, &(&1)) do
       :error -> reload(server)

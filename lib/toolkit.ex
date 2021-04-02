@@ -83,6 +83,10 @@ defmodule Toolkit do
     end
   end
 
+  def valid_emote?(string) do
+    Unicode.emoji?(string) or Emote.emote?(Emote, string)
+  end
+  
   def config(key, default \\ nil) do
     case Application.fetch_env(:lichat, key) do
       :error -> default
