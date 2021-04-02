@@ -60,6 +60,22 @@ defmodule Profile do
     LocalProfile.info(LocalProfile, name, key, value)
   end
 
+  def blocked(name) do
+    LocalProfile.blocked(LocalProfile, name)
+  end
+
+  def block(name, target) do
+    name = String.downcase(name)
+    LocalProfile.ensure(LocalProfile, name)
+    LocalProfile.block(LocalProfile, name, target)
+  end
+
+  def unblock(name, target) do
+    name = String.downcase(name)
+    LocalProfile.ensure(LocalProfile, name)
+    LocalProfile.unblock(LocalProfile, name, target)
+  end
+
   def lookup(name) do
     name = String.downcase(name)
     find_child(fn module, pid ->

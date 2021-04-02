@@ -2,7 +2,7 @@ defmodule LocalProfile do
   @behaviour Profile
   require Logger
   use Agent
-  defstruct name: nil, password: nil, expiry: Toolkit.time()+Toolkit.config(:profile_lifetime, 60*60*24*365), info: %{}
+  defstruct name: nil, password: nil, expiry: Toolkit.time()+Toolkit.config(:profile_lifetime, 60*60*24*365), info: %{}, blocked: MapSet.new()
 
   @impl Profile
   def start_link(opts) do
@@ -35,6 +35,16 @@ defmodule LocalProfile do
     File.write(Toolkit.config(:profile_file), :erlang.term_to_binary(Agent.get(server, & &1)))
   end
 
+  defp update(server, name, fun) do
+    Agent.update(server, fn map ->
+      if Map.has_key?(map, name) do
+        Map.update!(map, name, fun)
+      else
+        map
+      end
+    end)
+  end
+
   def info(server, name) do
     case Agent.get(server, &Map.fetch(&1, name)) do
       {:ok, profile} -> profile.info
@@ -43,13 +53,22 @@ defmodule LocalProfile do
   end
 
   def info(server, name, key, value) do
-    Agent.update(server, fn map ->
-      if Map.has_key?(map, name) do
-        Map.update!(map, name, &%{&1 | info: Map.put(&1.info, key, value)})
-      else
-        map
-      end
-    end)
+    update(server, name, &%{&1 | info: Map.put(&1.info, key, value)})
+  end
+
+  def blocked(server, name) do
+    case Agent.get(server, &Map.fetch(&1, name)) do
+      {:ok, profile} -> profile.blocked
+      :error -> :not_registered
+    end
+  end
+
+  def block(server, name, target) do
+    update(server, name, &%{&1 | blocked: MapSet.put(&1.blocked, target)})
+  end
+
+  def unblock(server, name, target) do
+    update(server, name, &%{&1 | blocked: MapSet.delete(&1.blocked, target)})
   end
 
   def ensure(server, name) do

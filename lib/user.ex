@@ -1,7 +1,7 @@
 defmodule User do
   require Logger
   use GenServer
-  defstruct name: nil, connections: %{}, channels: %{}, shares: %{}
+  defstruct name: nil, connections: %{}, channels: %{}, shares: %{}, blocked: MapSet.new()
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -117,6 +117,26 @@ defmodule User do
   def assume(user, key) do
     GenServer.call(user, {:assume, key})
   end
+  
+  def block(user, target) when is_binary(user) do
+    {:ok, user} = User.get(user)
+    block(user, target)
+  end
+
+  def block(user, target) do
+    GenServer.cast(user, {:block, target})
+    user
+  end
+
+  def unblock(user, target) when is_binary(user) do
+    {:ok, user} = User.get(user)
+    unblock(user, target)
+  end
+
+  def unblock(user, target) do
+    GenServer.cast(user, {:unblock, target})
+    user
+  end
 
   def name(user) do
     GenServer.call(user, :name)
@@ -141,7 +161,11 @@ defmodule User do
   @impl true
   def init(name) do
     {:ok, _} = Registry.register(__MODULE__, String.downcase(name), nil)
-    {:ok, %User{name: name}}
+    blocked = case Profile.blocked(name) do
+                :not_registered -> MapSet.new()
+                map -> map
+              end
+    {:ok, %User{name: name, blocked: blocked}}
   end
 
   @impl true
@@ -180,7 +204,7 @@ defmodule User do
   def handle_call(:create_share, _from, user) do
     if map_size(user.shares) < Toolkit.config(:max_shares_per_user) do
       key = Toolkit.random_key()
-      {:reply, {:ok, key}, %{user | shares: Map.put(key, :unclaimed)}}
+      {:reply, {:ok, key}, %{user | shares: Map.put(user.shares, key, :unclaimed)}}
     else
       {:reply, :too_many_shares, user}
     end
@@ -221,7 +245,9 @@ defmodule User do
 
   @impl true
   def handle_cast({:send, update}, user) do
-    Enum.each(Map.keys(user.connections), fn connection -> send(connection, {:send, update}) end)
+    if not MapSet.member?(user.blocked, String.downcase(update.from)) do
+      Enum.each(Map.keys(user.connections), fn connection -> send(connection, {:send, update}) end)
+    end
     {:noreply, user}
   end
 
@@ -257,6 +283,15 @@ defmodule User do
       if is_binary(key), do: handle_cast({:revoke_share, key}, user)
     end)
     {:noreply, %{user | shares: %{}}}
+  end
+  
+  def handle_cast({:block, target}, user) do
+    {:noreply, %{user | blocked: MapSet.put(user.blocked, String.downcase(target))}}
+  end
+
+  @impl true
+  def handle_cast({:unblock, target}, user) do
+    {:noreply, %{user | blocked: MapSet.delete(user.blocked, String.downcase(target))}}
   end
 
   @impl true
