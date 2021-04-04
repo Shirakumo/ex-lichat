@@ -6,7 +6,7 @@ defupdate(Message, "MESSAGE", [:channel, :text, [:bridge, optional: true]]) do
         cond do
           not User.in_channel?(state.user, channel) ->
             Connection.write(state, Update.fail(update, Update.NotInChannel))
-          type.bridge != nil ->
+          is_binary(type.bridge) ->
             Update.Bridge.bridge(type, update, state, channel)
           true->
             Channel.write(channel, update)
