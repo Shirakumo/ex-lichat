@@ -20,7 +20,11 @@ defmodule LocalProfile do
     Logger.info("Reloading profiles")
     case File.read(Toolkit.config(:profile_file)) do
       {:ok, content} ->
-        map = :erlang.binary_to_term(content)
+        map = Map.new(:erlang.binary_to_term(content), fn {k, map} ->
+          {k, map
+          |> Map.put_new(:blocked, MapSet.new())
+          |> Map.put_new(:info, %{})}
+        end)
         Agent.update(server, fn(_) -> map end)
         :ok
       {:error, reason} ->
