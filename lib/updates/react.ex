@@ -7,7 +7,7 @@ defupdate(React, "REACT", [:channel, :target, [:update_id, symbol: "UPDATE-ID"],
           not User.in_channel?(state.user, channel) ->
             Connection.write(state, Update.fail(update, Update.NotInChannel))
           not Toolkit.valid_emote?(type.emote) ->
-            Connection.write(state, Update.fail(update, Update.Malformed.MalformedUpdate))
+            Connection.write(state, Update.fail(update, Update.MalformedUpdate))
           true ->
             Channel.write(channel, update)
         end
