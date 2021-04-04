@@ -28,7 +28,7 @@ defmodule Emote do
   end
 
   def emote?(server, string) do
-    Agent.get(server, fn list -> Enum.find(list, &(&1.name == string)) end)
+    Agent.get(server, fn map -> Map.has_key?(map, string) end)
   end
 
   def list(server) do
