@@ -97,11 +97,15 @@ defmodule Update do
     end
   end
 
-  def parse(input) do
+  def parse(input) when is_binary(input) do
     case WireFormat.update1(input) do
       {:error, msg, _, _, _, _} -> raise Error.ParseFailure, message: msg
       {:ok, update} -> from_list(update)
     end
+  end
+
+  def parse(%Update{} = input) do
+    input
   end
 
   def print(update) do
