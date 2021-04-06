@@ -84,7 +84,7 @@ defmodule IRC do
   end
 
   def decode(state, "PRIVMSG", [chan | args]) do
-    text = String.trim_leading(Enum.join(args, " "), ":")
+    text = strip_prefix(Enum.join(args, " "))
     reply_update(state, Update.Message, [channel: from_channelname(chan), text: text])
   end
 
@@ -278,17 +278,15 @@ defmodule IRC do
     to_safe_name(name)
   end
 
-  def from_channelname(<<?#, name::binary>>) do
-    from_safe_name(name)
-  end
-
-  def from_channelname(name) do
-    from_safe_name(name)
-  end
+  def from_channelname(<<?#, name::binary>>), do: from_safe_name(name)
+  def from_channelname(name), do: from_safe_name(name)
 
   def server() do
     to_source(Lichat.server_name())
   end
+
+  def strip_prefix(<<?:, rest::binary>>), do: rest
+  def strip_prefix(rest), do: rest
   
   @impl Connection
   def close(state) do
