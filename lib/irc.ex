@@ -139,8 +139,9 @@ defmodule IRC do
     if update.from == state.name do
       {:ok, channel_pid} = Channel.get(update.type.channel)
       users = Enum.map_join(Channel.usernames(channel_pid), " ", &to_source/1)
-      Connection.write(state, encode_named(Lichat.server_name(), "TOPIC", [server(), channel], "..."))
-      Connection.write(state, encode_named(Lichat.server_name(), "353", [channel], users))
+      topic = Channel.info(channel_pid, Symbol.kw("TOPIC"))
+      Connection.write(state, encode_named(Lichat.server_name(), "TOPIC", [server(), channel], topic))
+      Connection.write(state, encode_named(Lichat.server_name(), "353", ["=", channel], users))
       Connection.write(state, encode_named(Lichat.server_name(), "366", [channel], "End of Names list"))
     end
     :skip
