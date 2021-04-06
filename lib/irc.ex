@@ -278,8 +278,11 @@ defmodule IRC do
     to_safe_name(name)
   end
 
+  def from_channelname(<<?#, name::binary>>) do
+    from_safe_name(name)
+  end
+
   def from_channelname(name) do
-    <<?#, name::binary>> = name
     from_safe_name(name)
   end
 
