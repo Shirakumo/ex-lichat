@@ -207,7 +207,7 @@ defmodule Connection do
   def init(data, state) do
     {:ok, {addr, _port}} = :inet.peername(state.socket)
     state = %{state | ip: addr}
-    Enum.find_value([Websocket, RawTCP], state, fn module ->
+    Enum.find_value([Websocket, IRC, RawTCP], state, fn module ->
       case module.init(data, state) do
         {:ok, state} ->
           if Blacklist.has?(state.ip) do

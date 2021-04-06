@@ -1,4 +1,5 @@
 defmodule IRC do
+  require Logger
   @behaviour Connection
 
   @impl Connection
@@ -45,18 +46,19 @@ defmodule IRC do
   end
 
   def handle_line(state, data) do
+    data = String.trim_trailing(data)
     case state.state do
       :pass ->
-        {:more, %{state | state: {:nick, String.slice(data, 5...256)}}}
+        {:more, %{state | state: {:nick, String.slice(data, 5..256)}}}
       {:nick, pass} ->
         if String.starts_with?(data, "NICK ") do
-          {:more, %{state | state: {:user, String.slice(data, 5...256), pass}}}
+          {:more, %{state | state: {:user, pass}, name: String.slice(data, 5..256)}}
         else
           {:error, "Expected NICK command.", state}
         end
-      {:user, nick, pass} ->
+      {:user, pass} ->
         if String.starts_with?(data, "USER ") do
-          {:ok, Update.make(Update.Connect, [from: nick, password: pass, id: 0]), %{state | state: :connected}}
+          {:ok, Update.make(Update.Connect, [from: state.name, password: pass, version: Lichat.version()]), %{state | state: nil}}
         else
           {:error, "Expected USER command.", state}
         end
@@ -66,69 +68,110 @@ defmodule IRC do
   end
 
   def decode(state, string) do
-    splitter = String.splitter(string, [' '])
-    [command] = Enum.take(splitter)
-    decode(state, command, splitter)
+    [command | args] = String.split(string, " ")
+    decode(state, command, args)
   end
 
-  def decode(state, "JOIN", splitter) do
-    
+  def decode(state, "JOIN", [chan | _]) do
+    case Channel.get(chan) do
+      {:ok, _} -> reply_update(state, Update.Join, [channel: from_channelname(chan)])
+      :error -> reply_update(state, Update.Create, [channel: from_channelname(chan)])
+    end
   end
 
-  def decode(state, "PART", splitter) do
-
+  def decode(state, "PART", [chan | _]) do
+    reply_update(state, Update.Leave, [channel: from_channelname(chan)])
   end
 
-  def decode(state, "PRIVMSG", splitter) do
-    
+  def decode(state, "PRIVMSG", [chan | args]) do
+    text = String.trim_leading(Enum.join(args, " "), ":")
+    reply_update(state, Update.Message, [channel: from_channelname(chan), text: text])
   end
 
-  def decode(state, "TOPIC", splitter) do
-
+  def decode(state, "TOPIC", [chan | _]) do
+    reply_update(state, Update.ChannelInfo, [channel: from_channelname(chan), keys: [Symbol.kw("TOPIC")]])
   end
 
-  def decode(state, "QUIT", splitter) do
+  def decode(state, "QUIT", _args) do
+    reply_update(state, Update.Disconnect)
+  end
 
+  def decode(state, "PING", _args) do
+    reply_update(state, Update.Ping)
+  end
+
+  def decode(state, "PONG", _args) do
+    reply_update(state, Update.Pong)
+  end
+
+  def decode(state, _, _) do
+    {:more, state}
+  end
+
+  def reply_update(state, type, args \\ []) do
+    {:ok, Update.make(type, [{:id, 0} | [{:from, state.name} | args]]), state}
   end
 
   @impl Connection
   def write(state, update) do
-    if update.from != state.name do
-      case encode(state, update.type.__struct__, update) do
-        :skip -> state
-        string -> Connection.write(state, string)
-      end
-    else
-      state
+    case encode(state, update.type.__struct__, update) do
+      :skip -> state
+      string -> Connection.write(state, string)
     end
   end
 
   def encode(_state, Update.Connect, update) do
-    encode(Lichat.server_name(), "001", [update.from], "Welcome to the Lichat IRC gateway at " <> Lichat.server_name())
+    encode_named(Lichat.server_name(), "001", [update.from], "Welcome to the Lichat IRC gateway at " <> server())
   end
 
-  def encode(_state, Update.Message, update) do
-    encode(update.from, "PRIVMSG", [to_channelname(update.type.channel)], update.type.message)
+  def encode(state, Update.Message, update) do
+    if update.from != state.name do
+      Enum.each(String.split(update.type.text, "\n"), fn line ->
+        Connection.write(state, encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], line))
+      end)
+    end
+    :skip
   end
 
-  def encode(_state, Update.Join, update) do
-    encode(update.from, "JOIN", [to_channelname(update.type.channel)])
+  def encode(state, Update.Join, update) do
+    channel = to_channelname(update.type.channel)
+    Connection.write(state, encode_named(update.from, "JOIN", [channel]))
+    if update.from == state.name do
+      {:ok, channel_pid} = Channel.get(update.type.channel)
+      users = Enum.map_join(Channel.usernames(channel_pid), " ", &to_source/1)
+      Connection.write(state, encode_named(Lichat.server_name(), "TOPIC", [server(), channel], "..."))
+      Connection.write(state, encode_named(Lichat.server_name(), "353", [channel], users))
+      Connection.write(state, encode_named(Lichat.server_name(), "366", [channel], "End of Names list"))
+    end
+    :skip
+  end
+
+  def encode(state, Update.Create, update) do
+    encode(state, Update.Join, update)
   end
 
   def encode(_state, Update.Leave, update) do
-    encode(update.from, "PART", [to_channelname(update.type.channel)])
+    encode_named(update.from, "PART", [to_channelname(update.type.channel)])
   end
 
   def encode(_state, Update.Disconnect, update) do
-    encode(update.from, "QUIT", [], "Quit: connection closed.")
+    encode_named(update.from, "QUIT", [], "Quit: connection closed.")
+  end
+
+  def encode(_state, Update.SetChannelInfo, update) do
+    if update.type.key == Symbol.kw("TOPIC") do
+      encode_named(update.from, "TOPIC", [server(), to_channelname(update.type.channel)], update.type.value)
+    else
+      :skip
+    end
   end
 
   def encode(_state, Update.Ping, update) do
-    encode(update.from, "PING", [], Lichat.server_name())
+    encode_named(update.from, "PING", [], server())
   end
 
   def encode(_state, Update.Pong, update) do
-    encode(update.from, "PONG", [], Lichat.server_name())
+    encode_named(update.from, "PONG", [], server())
   end
 
   def encode(_state, Update.Failure, update) do
@@ -184,11 +227,11 @@ defmodule IRC do
   end
 
   def encode_numeric(type, update, parameters \\ []) do
-    encode(Lichat.server_name(), type, [update.from | parameters], update.type.text)
+    encode_named(Lichat.server_name(), type, [update.from | parameters], update.type.text)
   end
 
-  def encode(source, type, parameters, trail \\ nil) do
-    {:ok, stream} = StringIO.open("", [encoding: :latin1])
+  def encode_named(source, type, parameters, trail \\ nil) do
+    {:ok, stream} = StringIO.open("")
     IO.write(stream, ":")
     IO.write(stream, to_source(source))
     IO.write(stream, " ")
@@ -206,18 +249,43 @@ defmodule IRC do
     string
   end
 
-  def to_safe_name(name, excluded) do
-    Enum.filter(name, &(&1 not in excluded))
+  def to_safe_name(name) do
+    String.replace(name, ["_", " ", ":"], fn <<char>> ->
+      case char do
+        ?_ -> "__"
+        ?\s -> "_"
+        ?: -> ".."
+      end
+    end)
+  end
+
+  def from_safe_name(name) do
+    String.replace(name, ["__", "_", ".."], fn string ->
+      case string do
+        "__" -> "_"
+        "_" -> " "
+        ".." -> ":"
+      end
+    end)
   end
 
   def to_channelname(name) do
-    "#" <> to_safe_name(name, [' ', ':'])
+    "#" <> to_safe_name(name)
   end
 
   def to_source(name) do
-    to_safe_name(name, [' ', ':', '#', '&'])
+    to_safe_name(name)
   end
 
+  def from_channelname(name) do
+    <<?#, name::binary>> = name
+    from_safe_name(name)
+  end
+
+  def server() do
+    to_source(Lichat.server_name())
+  end
+  
   @impl Connection
   def close(state) do
     write(state, Update.make(Update.Disconnect, [from: state.name]))
