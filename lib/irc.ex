@@ -5,9 +5,11 @@ defmodule IRC do
   @impl Connection
   def init(data, state) do
     cond do
-      String.starts_with?(data, "PASS") ->
+      String.starts_with?(data, "CAP ")->
+        {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: :caps}}
+      String.starts_with?(data, "PASS ") ->
         {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: :pass}}
-      String.starts_with?(data, "NICK") ->
+      String.starts_with?(data, "NICK ") ->
         {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: {:nick, nil}}}
       true ->
         :error
@@ -48,6 +50,8 @@ defmodule IRC do
   def handle_line(state, data) do
     data = String.trim_trailing(data)
     case state.state do
+      :caps ->
+        {:more, %{state | state: :pass}}
       :pass ->
         {:more, %{state | state: {:nick, String.slice(data, 5..256)}}}
       {:nick, pass} ->
