@@ -280,6 +280,10 @@ defmodule Channel do
   def users(channel) do
     GenServer.call(channel, :users)
   end
+
+  def usernames(channel) do
+    GenServer.call(channel, :usernames)
+  end
   
   def permissions(channel) do
     GenServer.call(channel, :permissions)
@@ -470,6 +474,11 @@ defmodule Channel do
   @impl true
   def handle_call(:users, _from, channel) do
     {:reply, Map.keys(channel.users), channel}
+  end
+
+  @impl true
+  def handle_call(:usernames, _from, channel) do
+    {:reply, Enum.map(channel.users, fn {_, {name, _, _}} -> name end), channel}
   end
 
   @impl true
