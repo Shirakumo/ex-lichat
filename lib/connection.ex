@@ -75,12 +75,12 @@ defmodule Connection do
             Process.demonitor(ref)
             %{state | identities: Map.drop(map, name)}
         end
-    after 30000 ->
+    after 5_000 ->
         case state.state do
           nil ->
             ## Timeout on connect, just close.
             shutdown(state)
-          {:timeout, 5, _} ->
+          {:timeout, 24, _} ->
             Logger.info("Connection #{inspect(self())} timed out, closing")
             close(state)
           {:timeout, n, p} ->
