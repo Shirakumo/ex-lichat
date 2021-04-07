@@ -5,7 +5,6 @@ defupdate(Channels, "CHANNELS", [[:channel, required: false]]) do
     channels = Channel.list(type.channel, :pids)
     |> Enum.filter(fn {_name, pid} -> Channel.permitted?(pid, update) end)
     |> Enum.map(fn {name, _} -> name end)
-    Logger.info("test #{inspect(channels)}")
     Connection.write(state, Update.reply(update, Update.Channels, [
               from: Lichat.server_name(),
               channels: channels ]))

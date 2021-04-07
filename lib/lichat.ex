@@ -28,6 +28,7 @@ defmodule Lichat do
       {Profile, name: Profile},
       {Emote, name: Emote},
       {Blacklist, name: Blacklist},
+      Init,
       {Server,
        listeners: Toolkit.config(:listen, []),
        supervisor: Connection.Supervisor}
@@ -35,10 +36,6 @@ defmodule Lichat do
 
     opts = [strategy: :one_for_one, name: Lichat.Supervisor]
     pid = Supervisor.start_link(children, opts)
-
-    Channels.reload()
-    Channel.ensure_channel()
-    User.ensure_user()
     
     System.at_exit(fn _ ->
       Channels.offload()
