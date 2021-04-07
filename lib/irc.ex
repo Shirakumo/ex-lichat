@@ -5,12 +5,8 @@ defmodule IRC do
   @impl Connection
   def init(data, state) do
     cond do
-      String.starts_with?(data, "CAP ")->
-        {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: :caps}}
-      String.starts_with?(data, "PASS ") ->
-        {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: :pass}}
-      String.starts_with?(data, "NICK ") ->
-        {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: {:nick, nil}}}
+      String.starts_with?(data, ["CAP ", "PASS ", "NICK ", "USER "]) ->
+        {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: {:init, nil, nil, nil}}}
       true ->
         :error
     end
@@ -49,22 +45,26 @@ defmodule IRC do
 
   def handle_line(state, data) do
     data = String.trim_trailing(data)
+    next = fn pass, nick, user ->
+      if nick == nil or user == nil do
+        {:more, %{state | state: {:init, pass, nick, user}}}
+      else
+        {:ok, Update.make(Update.Connect, [from: nick, password: pass, version: Lichat.version()]), %{state | state: nil, name: nick}}
+      end
+    end
     case state.state do
-      :caps ->
-        {:more, %{state | state: :pass}}
-      :pass ->
-        {:more, %{state | state: {:nick, String.slice(data, 5..256)}}}
-      {:nick, pass} ->
-        if String.starts_with?(data, "NICK ") do
-          {:more, %{state | state: {:user, pass}, name: String.slice(data, 5..256)}}
-        else
-          {:error, "Expected NICK command.", state}
-        end
-      {:user, pass} ->
-        if String.starts_with?(data, "USER ") do
-          {:ok, Update.make(Update.Connect, [from: state.name, password: pass, version: Lichat.version()]), %{state | state: nil}}
-        else
-          {:error, "Expected USER command.", state}
+      {:init, pass, nick, user} ->
+        cond do
+          String.starts_with?(data, "CAP ") ->
+            next.(pass, nick, user)
+          String.starts_with?(data, "PASS ") ->
+            next.(String.slice(data, 5..256), nick, user)
+          String.starts_with?(data, "NICK ") ->
+            next.(pass, from_source(String.slice(data, 5..256)), user)
+          String.starts_with?(data, "USER ") ->
+            next.(pass, nick, true)
+          true ->
+            {:error, "Unknown command in init, got #{data}", state}
         end
       _ ->
         decode(state, data)
@@ -285,6 +285,10 @@ defmodule IRC do
   def from_channelname(<<?#, name::binary>>), do: from_safe_name(name)
   def from_channelname(name), do: from_safe_name(name)
 
+  def from_source(name) do
+    from_safe_name(name)
+  end
+  
   def server() do
     to_source(Lichat.server_name())
   end
