@@ -137,6 +137,18 @@ defmodule IRC do
     :skip
   end
 
+  def encode(_state, Update.Data, update) do
+    encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], <<1::8, "ACTION Sent a file.", 1::8>>)
+  end
+
+  def encode(_state, Update.React, update) do
+    encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], <<1::8, "ACTION Reacted with ", update.type.emote, 1::8>>)
+  end
+
+  def encode(_state, Update.Edit, update) do
+    encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], <<1::8, "ACTION Edited to: ", update.type.text, 1::8>>)
+  end
+
   def encode(state, Update.Join, update) do
     channel = to_channelname(update.type.channel)
     Connection.write(state, encode_named(update.from, "JOIN", [channel]))
