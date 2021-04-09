@@ -108,6 +108,10 @@ defmodule IRC do
     reply_update(state, Update.Pong)
   end
 
+  def decode(state, "NAMES", [chan | _]) do
+    reply_update(state, Update.Users, [channel: from_channelname(chan)])
+  end
+
   def decode(state, _, _) do
     {:more, state}
   end
@@ -157,8 +161,8 @@ defmodule IRC do
       users = Enum.map_join(Channel.usernames(channel_pid), " ", &to_source/1)
       topic = Channel.info(channel_pid, Symbol.kw("TOPIC"))
       Connection.write(state, encode_named(Lichat.server_name(), "TOPIC", [server(), channel], topic))
-      Connection.write(state, encode_named(Lichat.server_name(), "353", ["=", channel], users))
-      Connection.write(state, encode_named(Lichat.server_name(), "366", [channel], "End of Names list"))
+      Connection.write(state, encode_named(Lichat.server_name(), "353", [server(), "=", channel], users))
+      Connection.write(state, encode_named(Lichat.server_name(), "366", [server(), channel], "End of Names list"))
     end
     :skip
   end
@@ -181,6 +185,13 @@ defmodule IRC do
     else
       :skip
     end
+  end
+
+  def encode(state, Update.Users, update) do
+    channel = to_channelname(update.type.channel)
+    users = Enum.map_join(update.type.users, " ", &to_source/1)
+    Connection.write(state, encode_named(Lichat.server_name(), "353", ["=", channel], users))
+    encode_named(Lichat.server_name(), "366", [server(), channel], "End of Names list")
   end
 
   def encode(_state, Update.Ping, update) do
