@@ -112,7 +112,18 @@ defmodule IRC do
     reply_update(state, Update.Users, [channel: from_channelname(chan)])
   end
 
-  def decode(state, _, _) do
+  def decode(state, "MODE", [chan | _]) do
+    Connection.write(state, encode_named(server(), "324", [server(), chan, "+Cg"]))
+    {:more, state}
+  end
+
+  def decode(state, "WHO", _args) do
+    Connection.write(state, encode_named(server(), "315", [server(), server()], "End of WHO list"))
+    {:more, state}
+  end
+
+  def decode(state, command, args) do
+    Logger.info("IRC: Ignoring unknown command #{command} #{Enum.join(args, " ")}")
     {:more, state}
   end
 
