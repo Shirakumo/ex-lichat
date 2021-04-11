@@ -52,7 +52,7 @@ defmodule WireFormat do
     end
 
     defp parse_symbol("T"), do: true
-    defp parse_symbol("NIL"), do: false
+    defp parse_symbol("NIL"), do: nil
     defp parse_symbol(name), do: Symbol.li(name)
 
     defp upcase_char(c) do
