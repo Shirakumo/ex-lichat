@@ -9,7 +9,7 @@ defupdate(Message, "MESSAGE", [:channel, :text, [:bridge, optional: true]]) do
           is_binary(type.bridge) ->
             Update.Bridge.bridge(type, update, state, channel)
           true->
-            Channel.write(channel, update)
+            Channel.write(channel, %{update | type: Map.delete(type, :bridge)})
         end
       :error ->
         Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
