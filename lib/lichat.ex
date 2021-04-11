@@ -23,6 +23,7 @@ defmodule Lichat do
     
     children = [
       {Task.Supervisor, name: Connection.Supervisor},
+      {History, Toolkit.config(History, [])},
       {Users, name: Users},
       {Channels, name: Channels},
       {Profile, name: Profile},

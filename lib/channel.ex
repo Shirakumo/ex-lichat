@@ -23,6 +23,7 @@ defmodule Channel do
         {Update.Pull, true},
         {Update.Quiet, :registrant},
         {Update.React, true},
+        {Update.Search, true},
         {Update.SetChannelInfo, :registrant},
         {Update.Unquiet, :registrant},
         {Update.Users, true},
@@ -47,6 +48,7 @@ defmodule Channel do
         {Update.Pull, true},
         {Update.Quiet, :registrant},
         {Update.React, true},
+        {Update.Search, false},
         {Update.SetChannelInfo, false},
         {Update.Unquiet, :registrant},
         {Update.Users, true},
@@ -86,6 +88,7 @@ defmodule Channel do
         {Update.Quiet, false},
         {Update.React, true},
         {Update.Register, true},
+        {Update.Search, true},
         {Update.ServerInfo, :registrant},
         {Update.SetChannelInfo, :registrant},
         {Update.SetUserInfo, true},
@@ -143,6 +146,7 @@ defmodule Channel do
     case Registry.lookup(Channel, String.downcase(channel.name)) do
       [] ->
         {:ok, pid} = Channels.start_child([channel])
+        History.create(channel.name)
         Logger.info("New channel #{channel.name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
@@ -188,6 +192,9 @@ defmodule Channel do
   end
   def write(channel, update) do
     GenServer.cast(channel, {:send, update})
+    if update.type.__struct__ == Update.Message do
+      History.record(update)
+    end
     channel
   end
 
@@ -527,6 +534,7 @@ defmodule Channel do
   @impl true
   def handle_info(:expire, channel) do
     Logger.info("Channel #{channel.name} at #{inspect(self())} expired.")
+    History.clear(channel.name)
     {:stop, :normal, channel}
   end
   
