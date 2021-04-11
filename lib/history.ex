@@ -8,6 +8,7 @@ defmodule History do
     Yesql.defquery("lib/sql/create_history_table.sql")
     Yesql.defquery("lib/sql/create.sql")
     Yesql.defquery("lib/sql/search.sql")
+    Yesql.defquery("lib/sql/backlog.sql")
     Yesql.defquery("lib/sql/record.sql")
     Yesql.defquery("lib/sql/clear.sql")
   end
@@ -58,30 +59,36 @@ defmodule History do
   def clear(channel) do
     Query.clear(channel: channel)
   end
+
+  def backlog(channel, limit \\ 100) do
+    map_result(Query.backlog(channel: channel, limit: limit))
+  end
   
   def search(channel, query, offset \\ 0) do
     from = Toolkit.getf(query, :from)
     text = Toolkit.getf(query, :text)
-    [time_min, time_max] = Toolkit.getf(query, :clock, [Symbol.t, Symbol.t])
-    
-    case Query.search(
+    [time_min, time_max] = Toolkit.getf(query, :clock, [true, true])
+    map_result(Query.search(
           channel: channel,
           from: from,
           time_min: ensure_time(time_min),
           time_max: ensure_time(time_max),
           text: ensure_regex(text),
           limit: limit(),
-          offset: offset) do
-      {:ok, results} ->
-        Enum.map(results, &Update.make(Update.Message, [
-                  id: &1[:id],
-                  clock: &1[:clock],
-                  from: &1[:from],
-                  bridge: &1[:bridge],
-                  channel: &1[:name],
-                  text: &1[:text]]))
-      _ -> []
-    end
+          offset: offset))
+  end
+
+  defp map_result({:ok, results}), do: Enum.map(results, &map_result/1)
+  defp map_result({:error, _}), do: []
+
+  defp map_result(map) do
+    Update.make(Update.Message, [
+          id: map[:id],
+          clock: map[:clock],
+          from: map[:from],
+          bridge: map[:bridge],
+          channel: map[:name],
+          text: map[:text]])
   end
 
   defp ensure_time(true), do: nil

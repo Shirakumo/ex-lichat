@@ -1,7 +1,7 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, registrant: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new(), backlog: nil
+  defstruct name: nil, registrant: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
 
   def default_channel_permissions, do: Map.new([
         {Update.Backfill, true},
@@ -334,12 +334,7 @@ defmodule Channel do
         expiry: timer,
         pause: Map.get(channel, :pause, 0),
         last_update: %{},
-        quiet: Map.get(channel, :quiet, MapSet.new()),
-        backlog: if Map.get(channel, :backlog, nil) == nil do
-          Backlog.new(Toolkit.config(:channel_backlog))
-        else
-          channel.backlog
-        end
+        quiet: Map.get(channel, :quiet, MapSet.new())
      }}
   end
   
@@ -372,8 +367,7 @@ defmodule Channel do
          Map.put(channel.last_update, String.downcase(update.from), Toolkit.universal_time())
        else
          channel.last_update
-       end,
-       backlog: Backlog.push(channel.backlog, update)
+       end
      }}
   end
 
