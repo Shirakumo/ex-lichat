@@ -5,9 +5,9 @@ defupdate(Unblock, "UNBLOCK", [:target]) do
       :ok ->
         User.unblock(update.from, type.target)
         Profile.unblock(update.from, type.target)
-        Connection.write(state, update)
+        Lichat.Connection.write(state, update)
       true ->
-        Connection.write(state, Update.fail(Update.NoSuchProfile))
+        Lichat.Connection.write(state, Update.fail(Update.NoSuchProfile))
     end
   end
 end

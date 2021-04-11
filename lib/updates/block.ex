@@ -5,9 +5,9 @@ defupdate(Block, "BLOCK", [:target]) do
       :ok ->
         User.block(update.from, type.target)
         Profile.block(update.from, type.target)
-        Connection.write(state, update)
+        Lichat.Connection.write(state, update)
       true ->
-        Connection.write(state, Update.fail(Update.NoSuchProfile))
+        Lichat.Connection.write(state, Update.fail(Update.NoSuchProfile))
     end
   end
 end

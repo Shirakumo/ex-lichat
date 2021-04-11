@@ -6,6 +6,6 @@ defupdate(UnshareIdentity, "UNSHARE-IDENTITY", [[:key, optional: true]]) do
     else
       User.revoke_all_shares(state.user)
     end
-    Connection.write(state, update)
+    Lichat.Connection.write(state, update)
   end
 end

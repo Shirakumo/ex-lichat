@@ -7,10 +7,10 @@ defupdate(Leave, "LEAVE", [:channel]) do
           Channel.write(channel, update)
           User.leave(state.user, channel)
         else
-          Connection.write(state, Update.fail(update, Update.NotInChannel))
+          Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

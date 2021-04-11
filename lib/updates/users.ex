@@ -5,15 +5,15 @@ defupdate(Users, "USERS", [:channel, [:users, required: false]]) do
       {:ok, channel} ->
         if User.in_channel?(state.user, channel) do
           users = Channel.usernames(channel)
-          Connection.write(state, Update.reply(update, Update.Users, [
+          Lichat.Connection.write(state, Update.reply(update, Update.Users, [
                     channel: type.channel,
                     from: Lichat.server_name(),
                     users: users]))
         else
-          Connection.write(state, Update.fail(update, Update.NotInChannel))
+          Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

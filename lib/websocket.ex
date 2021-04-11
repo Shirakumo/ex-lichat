@@ -1,9 +1,9 @@
 defmodule Websocket do
   use Bitwise
   require Logger
-  @behaviour Connection
+  @behaviour Lichat.Connection
 
-  @impl Connection
+  @impl Lichat.Connection
   def init(data, state) do
     if String.starts_with?(data, "GET ") do
       {:ok, %{state | type: __MODULE__, accumulator: {<<>>,<<>>}, state: :header}}
@@ -12,7 +12,7 @@ defmodule Websocket do
     end
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def handle_payload(state, data, _max_size) do
     {accumulator, payload} = state.accumulator
     data = accumulator <> data
@@ -22,7 +22,7 @@ defmodule Websocket do
           {:ok, _request, headers} ->
             case decode_headers(headers) do
               {:ok, rest, fields} ->
-                Connection.write(state, encode_http_response(fields[:key]))
+                Lichat.Connection.write(state, encode_http_response(fields[:key]))
                 if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
                 {:more, %{state | accumulator: {<<>>, <<>>}, state: nil, ip: Map.get(fields, :ip, state.ip)}}
               {:more, _} ->
@@ -42,7 +42,7 @@ defmodule Websocket do
             case opcode do
               8 ->
                 write(state, 8, <<>>)
-                {:more, Connection.shutdown(state)}
+                {:more, Lichat.Connection.shutdown(state)}
               9 ->
                 write(state, 10, payload)
                 {:more, %{state | accumulator: {rest, <<>>}}}
@@ -65,15 +65,15 @@ defmodule Websocket do
     end
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def write(state, update) do
     write(state, 1, Update.print(update))
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def close(state) do
     write(state, 8, <<>>)
-    Connection.shutdown(state)
+    Lichat.Connection.shutdown(state)
   end
 
   defp encode_http_response(key) do
@@ -127,7 +127,7 @@ Sec-WebSocket-Protocol: lichat\r
   defp decode_headers(result, _), do: result
   
   defp write(state, opcode, data) do
-    Connection.write(state, encode_frame(opcode, data))
+    Lichat.Connection.write(state, encode_frame(opcode, data))
   end
 
   defp encode_frame(opcode, data) do

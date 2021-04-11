@@ -5,14 +5,14 @@ defupdate(Message, "MESSAGE", [:channel, :text, [:bridge, optional: true]]) do
       {:ok, channel} ->
         cond do
           not User.in_channel?(state.user, channel) ->
-            Connection.write(state, Update.fail(update, Update.NotInChannel))
+            Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
           is_binary(type.bridge) ->
             Update.Bridge.bridge(type, update, state, channel)
           true->
             Channel.write(channel, update)
         end
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

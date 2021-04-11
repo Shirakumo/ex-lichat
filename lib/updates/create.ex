@@ -8,11 +8,11 @@ defupdate(Create, "CREATE", [[:channel, required: false]]) do
         User.join(state.user, channel)
         User.write(state.user, Update.reply(update, Update.Join, [channel: name]))
       not Toolkit.valid_channel_name?(type.channel) ->
-        Connection.write(state, Update.fail(update, Update.BadName))
+        Lichat.Connection.write(state, Update.fail(update, Update.BadName))
       true ->
         case Channel.ensure_channel(type.channel, update.from) do
           {:old, _} ->
-            Connection.write(state, Update.fail(update, Update.ChannelnameTaken))
+            Lichat.Connection.write(state, Update.fail(update, Update.ChannelnameTaken))
           {:new, channel} ->
             Logger.info("#{update.from} created #{type.channel}", [intent: :user])
             User.join(state.user, channel)

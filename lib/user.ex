@@ -272,7 +272,7 @@ defmodule User do
                      Process.demonitor(monitor)
                      shares
                  end
-        Connection.remove_identity(connection)
+        Lichat.Connection.remove_identity(connection)
         {:noreply, %{user | shares: shares}}
     end
   end

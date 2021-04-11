@@ -1,8 +1,8 @@
 defmodule IRC do
   require Logger
-  @behaviour Connection
+  @behaviour Lichat.Connection
 
-  @impl Connection
+  @impl Lichat.Connection
   def init(data, state) do
     cond do
       String.starts_with?(data, ["CAP ", "PASS ", "NICK ", "USER "]) ->
@@ -12,7 +12,7 @@ defmodule IRC do
     end
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def handle_payload(state, data, max_size) do
     case state.accumulator do
       :dropping ->
@@ -113,12 +113,12 @@ defmodule IRC do
   end
 
   def decode(state, "MODE", [chan | _]) do
-    Connection.write(state, encode_named(server(), "324", [server(), chan, "+Cg"]))
+    Lichat.Connection.write(state, encode_named(server(), "324", [server(), chan, "+Cg"]))
     {:more, state}
   end
 
   def decode(state, "WHO", _args) do
-    Connection.write(state, encode_named(server(), "315", [server(), server()], "End of WHO list"))
+    Lichat.Connection.write(state, encode_named(server(), "315", [server(), server()], "End of WHO list"))
     {:more, state}
   end
 
@@ -131,11 +131,11 @@ defmodule IRC do
     {:ok, Update.make(type, [{:id, 0} | [{:from, state.name} | args]]), state}
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def write(state, update) do
     case encode(state, update.type.__struct__, update) do
       :skip -> state
-      string -> Connection.write(state, string)
+      string -> Lichat.Connection.write(state, string)
     end
   end
 
@@ -146,7 +146,7 @@ defmodule IRC do
   def encode(state, Update.Message, update) do
     if update.from != state.name do
       Enum.each(String.split(update.type.text, "\n"), fn line ->
-        Connection.write(state, encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], line))
+        Lichat.Connection.write(state, encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], line))
       end)
     end
     :skip
@@ -166,14 +166,14 @@ defmodule IRC do
 
   def encode(state, Update.Join, update) do
     channel = to_channelname(update.type.channel)
-    Connection.write(state, encode_named(update.from, "JOIN", [channel]))
+    Lichat.Connection.write(state, encode_named(update.from, "JOIN", [channel]))
     if update.from == state.name do
       {:ok, channel_pid} = Channel.get(update.type.channel)
       users = Enum.map_join(Channel.usernames(channel_pid), " ", &to_source/1)
       topic = Channel.info(channel_pid, Symbol.kw("TOPIC"))
-      Connection.write(state, encode_named(Lichat.server_name(), "TOPIC", [server(), channel], topic))
-      Connection.write(state, encode_named(Lichat.server_name(), "353", [server(), "=", channel], users))
-      Connection.write(state, encode_named(Lichat.server_name(), "366", [server(), channel], "End of Names list"))
+      Lichat.Connection.write(state, encode_named(Lichat.server_name(), "TOPIC", [server(), channel], topic))
+      Lichat.Connection.write(state, encode_named(Lichat.server_name(), "353", [server(), "=", channel], users))
+      Lichat.Connection.write(state, encode_named(Lichat.server_name(), "366", [server(), channel], "End of Names list"))
     end
     :skip
   end
@@ -201,7 +201,7 @@ defmodule IRC do
   def encode(state, Update.Users, update) do
     channel = to_channelname(update.type.channel)
     users = Enum.map_join(update.type.users, " ", &to_source/1)
-    Connection.write(state, encode_named(Lichat.server_name(), "353", ["=", channel], users))
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "353", ["=", channel], users))
     encode_named(Lichat.server_name(), "366", [server(), channel], "End of Names list")
   end
 
@@ -330,9 +330,9 @@ defmodule IRC do
   def strip_prefix(<<?:, rest::binary>>), do: rest
   def strip_prefix(rest), do: rest
   
-  @impl Connection
+  @impl Lichat.Connection
   def close(state) do
     write(state, Update.make(Update.Disconnect, [from: state.name]))
-    Connection.shutdown(state)
+    Lichat.Connection.shutdown(state)
   end
 end

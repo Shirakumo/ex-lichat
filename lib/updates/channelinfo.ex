@@ -10,14 +10,14 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
               if Channel.valid_info?(k) do
                 true
               else
-                Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: k]))
+                Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: k]))
                 false
               end
             end)
             Enum.filter(Channel.info(channel), fn {k, _} -> Enum.member?(keys, k) end)
           end
         Enum.each(map, fn {k, v} ->
-          Connection.write(state, Update.reply(update, Update.SetChannelInfo, [
+          Lichat.Connection.write(state, Update.reply(update, Update.SetChannelInfo, [
                     from: Lichat.server_name(),
                     channel: type.channel,
                     key: k,
@@ -25,7 +25,7 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
                   ]))
         end)
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

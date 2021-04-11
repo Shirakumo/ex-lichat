@@ -11,16 +11,16 @@ defupdate(Backfill, "BACKFILL", [:channel]) do
               false
             else
               if old.from != update.from or old.type.__struct__ != Update.Join do
-                Connection.write(state, old)
+                Lichat.Connection.write(state, old)
               end
               true
             end
           end)
         else
-          Connection.write(state, Update.fail(update, Update.NotInChannel))
+          Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

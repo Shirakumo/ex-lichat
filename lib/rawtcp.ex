@@ -1,12 +1,12 @@
 defmodule RawTCP do
-  @behaviour Connection
+  @behaviour Lichat.Connection
 
-  @impl Connection
+  @impl Lichat.Connection
   def init(_data, state) do
     {:ok, %{state | type: __MODULE__}}
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def handle_payload(state, data, max_size) do
     case state.accumulator do
       :dropping ->
@@ -37,16 +37,16 @@ defmodule RawTCP do
     end
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def write(state, update) do
-    Connection.write(state, Update.print(update))
+    Lichat.Connection.write(state, Update.print(update))
   end
 
-  @impl Connection
+  @impl Lichat.Connection
   def close(state) do
     write(state, Update.make(Update.Disconnect, [
               from: Lichat.server_name()
             ]))
-    Connection.shutdown(state)
+    Lichat.Connection.shutdown(state)
   end
 end

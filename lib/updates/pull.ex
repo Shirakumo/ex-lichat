@@ -7,9 +7,9 @@ defupdate(Pull, "PULL", [:channel, :target]) do
           {:ok, channel} ->
             cond do
               not User.in_channel?(state.user, channel) ->
-                Connection.write(state, Update.fail(update, Update.NotInChannel))
+                Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
               User.in_channel?(target, channel) ->
-                Connection.write(state, Update.fail(update, Update.AlreadyInChannel))
+                Lichat.Connection.write(state, Update.fail(update, Update.AlreadyInChannel))
               true ->
                 User.join(target, channel)
                 Channel.write(channel, Update.reply(update, Update.Join, [
@@ -17,10 +17,10 @@ defupdate(Pull, "PULL", [:channel, :target]) do
                           channel: type.channel]))
             end
           :error ->
-            Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+            Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
         end
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchUser))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchUser))
     end
     state
   end

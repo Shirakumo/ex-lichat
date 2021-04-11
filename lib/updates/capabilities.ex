@@ -11,12 +11,12 @@ defupdate(Capabilities, "CAPABILITIES", [:channel, [:permitted, required: false]
           |> Enum.map(fn {type, _map} ->
             type.type_symbol
           end)
-          Connection.write(state, %{update | type: %{type | permitted: permitted}})
+          Lichat.Connection.write(state, %{update | type: %{type | permitted: permitted}})
         else
-          Connection.write(state, Update.fail(update, Update.NotInChannel))
+          Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
     end
     state
   end

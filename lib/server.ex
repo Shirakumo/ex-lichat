@@ -41,14 +41,14 @@ defmodule Server do
   
   defp accept(supervisor, socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Connection, [socket: client, ssl: false]})
+    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Lichat.Connection, [socket: client, ssl: false]})
     :gen_tcp.controlling_process(client, pid)
     accept(supervisor, socket)
   end
 
   defp accept_ssl(supervisor, socket) do
     {:ok, client} = :ssl.transport_accept(socket)
-    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Connection, [socket: client, ssl: true]})
+    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Lichat.Connection, [socket: client, ssl: true]})
     :ssl.controlling_process(client, pid)
     accept_ssl(supervisor, socket)
   end

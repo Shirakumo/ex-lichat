@@ -13,7 +13,7 @@ defupdate(UserInfo, "USER-INFO", [:target, [:info, required: false]]) do
              :not_registered -> []
              info -> Enum.map(info, fn {key, text} -> [key, text] end)
            end
-    Connection.write(state, Update.reply(update, Update.UserInfo, [
+    Lichat.Connection.write(state, Update.reply(update, Update.UserInfo, [
               from: Lichat.server_name(),
               connections: connections,
               registered: registered,

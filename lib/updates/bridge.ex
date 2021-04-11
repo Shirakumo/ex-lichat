@@ -1,6 +1,5 @@
 use Update
 defmodule Update.Bridge do
-  @is_update? true
   @behaviour Update
   @impl Update
   def type_symbol, do: %Symbol{name: "BRIDGE", package: :lichat}
@@ -18,9 +17,9 @@ defmodule Update.Bridge do
     def handle(type, update, state) do
       case Channel.get(type.channel) do
         {:ok, _channel} ->
-          Connection.write(state, update)
+          Lichat.Connection.write(state, update)
         :error ->
-          Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+          Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
       end
       state
     end
@@ -30,7 +29,7 @@ defmodule Update.Bridge do
     if Channel.permitted?(channel, Update.Bridge, update.from) do
       Channel.write(channel, %{update | from: type.bridge, type: %{type | bridge: update.from}})
     else
-      Connection.write(state, Update.fail(update, Update.InsufficientPermissions))
+      Lichat.Connection.write(state, Update.fail(update, Update.InsufficientPermissions))
     end
     state
   end

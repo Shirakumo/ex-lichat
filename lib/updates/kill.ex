@@ -6,9 +6,9 @@ defupdate(Kill, "KILL", [:target]) do
       {:ok, user} ->
         Logger.info("#{update.from} killed #{type.target}", [intent: :admin])
         User.destroy(user)
-        Connection.write(state, update)
+        Lichat.Connection.write(state, update)
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchUser))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchUser))
     end
     state
   end

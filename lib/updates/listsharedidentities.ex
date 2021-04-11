@@ -6,10 +6,10 @@ defupdate(ListSharedIdentities, "LIST-SHARED-IDENTITIES", [[:identities, optiona
         identities = User.data(user).shares
         |> Enum.filter(fn key, _ -> is_binary(key) end)
         |> Enum.map(fn key, {on_behalf, _} -> [key, on_behalf] end)
-        Connection.write(state, Update.reply(update, Update.ListSharedIdentities, [
+        Lichat.Connection.write(state, Update.reply(update, Update.ListSharedIdentities, [
                   identities: identities ]))
       :error ->
-        Connection.write(state, Update.fail(update, Update.NoSuchUser))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchUser))
     end
   end
 end

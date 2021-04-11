@@ -1,4 +1,4 @@
-defmodule Connection do
+defmodule Lichat.Connection do
   use Task
   require Logger
   defstruct type: nil,
@@ -24,10 +24,10 @@ defmodule Connection do
     opts = [active: true, nodelay: true]
     if ssl do
       :ssl.setopts(socket, opts)
-      Task.start_link(__MODULE__, :handshake_ssl, [%Connection{socket: socket, ssl: true}])
+      Task.start_link(__MODULE__, :handshake_ssl, [%Lichat.Connection{socket: socket, ssl: true}])
     else
       :inet.setopts(socket, opts)
-      Task.start_link(__MODULE__, :run, [%Connection{socket: socket, ssl: false}])
+      Task.start_link(__MODULE__, :run, [%Lichat.Connection{socket: socket, ssl: false}])
     end
   end
 
