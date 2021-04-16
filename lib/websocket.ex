@@ -143,33 +143,51 @@ Sec-WebSocket-Protocol: lichat\r
   defp decode_frame({fin, opcode, len, key, payload}) do
     if len <= byte_size(payload) do
       {payload, rest} = :erlang.split_binary(payload, len)
-      {:ok, fin, opcode, xor_mask(payload, len, key), rest}
+      unmasked = unmask(payload, key, len)
+      {:ok, fin, opcode, unmasked, rest}
     else
       :more
     end
   end
   
   ## Extended length 2
-  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 127::7, len::64, key::binary-size(4), payload :: binary>>) do
+  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 127::7, len::64, key::32, payload :: binary>>) do
     decode_frame({fin, opcode, len, key, payload})
   end
   ## Extended length 1
-  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 126::7, len::16, key::binary-size(4), payload :: binary>>) do
+  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, 126::7, len::16, key::32, payload :: binary>>) do
     decode_frame({fin, opcode, len, key, payload})
   end
   ## Standard length
-  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::binary-size(4), payload :: binary>>) do
+  defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::32, payload :: binary>>) do
     decode_frame({fin, opcode, len, key, payload})
   end
   defp decode_frame(_) do
     :error
   end
 
-  ## Might be terribly inefficient, idk.
-  defp xor_mask(payload, len, mask), do: xor_mask(payload, len, mask, 0, "")
-  defp xor_mask("", _, _, _, acc), do: acc
-  defp xor_mask(_, 0, _, _, acc), do: acc
-  defp xor_mask(<<a, as::binary>>, len, b, i, acc) do
-    xor_mask(as, len - 1, b, rem(1 + i, 4), <<acc::binary, bxor(a, :binary.at(b, i))>>)
+  defp unmask(data, nil, _), do: data
+  defp unmask(data, key, 0), do: mask(data, key, <<>>)
+  defp unmask(data, key, len), do: mask(data, key, <<>>)
+
+  defp mask(<<>>, _, unmasked), do: unmasked
+  defp mask(<<o::32, rest::bits>>, key, acc) do
+    t = bxor(o, key)
+    mask(rest, key, <<acc::binary, t::32>>)
+  end
+  defp mask(<<o::24>>, key, acc) do
+    <<key::24, _::8>> = <<key::32>>
+    t = bxor(o, key)
+    <<acc::binary, t::24>>
+  end
+  defp mask(<<o::16>>, key, acc) do
+    <<key::16, _::16>> = <<key::32>>
+    t = bxor(o, key)
+    <<acc::binary, t::16>>
+  end
+  defp mask(<<o::8>>, key, acc) do
+    <<key::8, _::24>> = <<key::32>>
+    t = bxor(o, key)
+    <<acc::binary, t::8>>
   end
 end
