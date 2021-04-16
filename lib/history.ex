@@ -41,27 +41,37 @@ defmodule History do
   end
 
   def create(channel) do
-    Query.create(channel: channel)
+    if Process.whereis(History) != nil do
+      Query.create(channel: channel)
+    end
   end
 
   def record(update) do
-    Query.record(
-      id: to_string(update.id),
-      clock: update.clock,
-      from: update.from,
-      bridge: Map.get(update.type, :bridge),
-      channel: update.type.channel,
-      text: update.type.text,
-      rich: Map.get(update.type, :rich),
-      markup: Map.get(update.type, :markup))
+    if Process.whereis(History) != nil do
+      Query.record(
+        id: to_string(update.id),
+        clock: update.clock,
+        from: update.from,
+        bridge: Map.get(update.type, :bridge),
+        channel: update.type.channel,
+        text: update.type.text,
+        rich: Map.get(update.type, :rich),
+        markup: Map.get(update.type, :markup))
+    end
   end
 
   def clear(channel) do
-    Query.clear(channel: channel)
+    if Process.whereis(History) != nil do
+      Query.clear(channel: channel)
+    end
   end
 
   def backlog(channel, limit \\ 100) do
-    map_result(Query.backlog(channel: channel, limit: limit))
+    if Process.whereis(History) != nil do
+      map_result(Query.backlog(channel: channel, limit: limit))
+    else
+      []
+    end
   end
   
   def search(channel, query, offset \\ 0) do
