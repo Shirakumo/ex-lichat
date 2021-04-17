@@ -34,3 +34,26 @@ iex -S mix
 ::
 
 You can configure and override settings from the "config"(config/config.exs) in the config/secret.exs file.
+
+## Sample Systemd Service
+
+::
+[Unit]
+Description=Lichat Chat Server
+
+[Service]
+Type=simple
+User=lichat
+ExecStart=$LICHAT_SOURCE/_build/dev/rel/lichat/bin/lichat start
+ExecStop=$LICHAT_SOURCE/_build/dev/rel/lichat/bin/lichat stop
+ExecReload=$LICHAT_SOURCE/_build/dev/rel/lichat/bin/lichat rpc "Lichat.reload()"
+WorkingDirectory=$LICHAT_SOURCE
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
+::
+
+Just replace ``$LICHAT_SOURCE`` with the path to your root source directory, assuming you built a binary from there with ``mix release``.
