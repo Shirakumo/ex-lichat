@@ -555,6 +555,7 @@ defmodule Channel do
   def handle_info(:expire, channel) do
     Logger.info("Channel #{channel.name} at #{inspect(self())} expired.")
     History.clear(channel.name)
+    Update.Link.clear(channel.name)
     {:stop, :normal, channel}
   end
   

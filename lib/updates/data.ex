@@ -9,7 +9,14 @@ defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :fil
       case Channel.get(type.channel) do
         {:ok, channel} ->
           if User.in_channel?(state.user, channel) do
-            Channel.write(channel, update)
+            # FIXME: Distribute link only to users that support the extension over data.
+            if Channel.permitted?(channel, Update.Link, update.from) do
+              url = Update.Link.save(update.channel, type.content_type, type.payload)
+              link = %{update | type: %{type | __struct__: Update.Link, payload: url}}
+              Channel.write(channel, link)
+            else
+              Channel.write(channel, update)
+            end
           else
             Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
           end

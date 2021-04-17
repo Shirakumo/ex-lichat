@@ -32,6 +32,13 @@ config :lichat,
   server_name: "Lichat",
   ## The profile authorities to use.
   profiles: [LDAPProfile, LocalProfile],
+  ## Directory to store files in
+  data_directory: "data/",
+  ## Link URL prefix. The following path will be appended: /{channel}/{link-id}.{file-type}
+  ## Though note that the channel name may itself contain slashes. Whatever the
+  ## case though, the path that is appended will match the path to the file
+  ## within the data_directory .
+  link_url_prefix: "https://localhost/lichat",
   ## Directory with emote files
   emote_directory: "emotes/",
   ## File to store profile data in
