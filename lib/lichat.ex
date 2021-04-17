@@ -40,11 +40,36 @@ defmodule Lichat do
     pid = Supervisor.start_link(children, opts)
     
     System.at_exit(fn _ ->
-      Channels.offload()
-      Blacklist.offload()
-      LocalProfile.offload(LocalProfile)
+      notify("Server shutting down...")
+      offload()
     end)
 
     pid
+  end
+
+  def notify(message) do
+    Channel.write_sync(Channel.primary(), Update.make(Update.Message, [
+              channel: server_name(),
+              from: server_name(),
+              text: message
+            ]))
+  end
+
+  def restart() do
+    notify("Server going down for restart shortly...")
+    offload()
+    System.stop(221)
+  end
+
+  def offload() do
+      Channels.offload()
+      Blacklist.offload()
+      LocalProfile.offload(LocalProfile)
+  end
+
+  def reload() do
+    Profile.reload()
+    Emote.reload(Emote)
+    Blacklist.reload()
   end
 end
