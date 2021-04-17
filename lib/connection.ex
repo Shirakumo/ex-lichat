@@ -63,10 +63,14 @@ defmodule Lichat.Connection do
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
+      {:send, msg, from} ->
+        write(state, msg)
+        send from, {:sent, self(), msg}
+        state
       :close ->
         close(state)
-      {:get_data, src} ->
-        send src, {:data, state}
+      {:get_data, from} ->
+        send from, {:data, state}
         state
       {:DOWN, _ref, :process, pid, _reason} ->
         case Map.pop(state.identities, pid) do
@@ -296,6 +300,14 @@ defmodule Lichat.Connection do
       state
     else
       data(connection)
+    end
+  end
+
+  def write_sync(connection, update) do
+    send(connection, {:send, update, self()}) 
+    receive do
+      {:sent, ^connection, ^update} -> :ok
+    after 1_000 -> :timeout
     end
   end
 

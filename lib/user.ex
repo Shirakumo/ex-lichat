@@ -26,6 +26,9 @@ defmodule User do
     end
   end
 
+  def list(:names), do: Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [{{:"$1", :"$1"}}]}])
+  def list(:pids), do: Registry.select(__MODULE__, [{{:"$1", :"$2", :_}, [], [{{:"$1", :"$2"}}]}])
+
   def ensure_user() do
     ensure_user(Lichat.server_name())
   end
@@ -67,6 +70,10 @@ defmodule User do
   def write(user, update) do
     GenServer.cast(user, {:send, update})
     user
+  end
+
+  def write_sync(user, update) do
+    GenServer.call(user, {:send, update})
   end
 
   def destroy(user) do
@@ -222,6 +229,14 @@ defmodule User do
       nil -> {:reply, :no_such_key, user}
       _ -> {:reply, :key_used, user}
     end
+  end
+
+  @impl true
+  def handle_call({:send, update}, _from, user) do
+    if not MapSet.member?(user.blocked, String.downcase(update.from)) do
+      Enum.each(Map.keys(user.connections), &Lichat.Connection.write_sync(&1, update))
+    end
+    {:reply, :ok, user}
   end
 
   @impl true

@@ -198,6 +198,10 @@ defmodule Channel do
     channel
   end
 
+  def write_sync(channel, update) do
+    GenServer.call(channel, {:send, update})
+  end
+
   def quiet(channel, user) when is_binary(channel) do
     {:ok, channel} = Channel.get(channel)
     quiet(channel, user)
@@ -433,6 +437,28 @@ defmodule Channel do
                 from: name ]))
     end)
     {:stop, :normal, channel}
+  end
+
+  @impl true
+  def handle_call({:send, update}, _from, channel) do
+    ## We duplicate handle_cast({:send ..}) here almost to the letter. This is bad, should factor out.
+    if MapSet.member?(channel.quiet, String.downcase(update.from)) do
+      Enum.each(Map.keys(channel.users), fn user ->
+        if User.name(user) == update.from do
+          User.write_sync(user, update)
+        end
+      end)
+    else
+      Enum.each(Map.keys(channel.users), &User.write(&1, update))
+    end
+    {:reply, :ok,
+     %{channel |
+       last_update: if 0 < channel.pause do
+         Map.put(channel.last_update, String.downcase(update.from), Toolkit.universal_time())
+       else
+         channel.last_update
+       end
+     }}
   end
   
   @impl true
