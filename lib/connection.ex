@@ -80,12 +80,12 @@ defmodule Lichat.Connection do
             Process.demonitor(ref)
             %{state | identities: Map.drop(map, name)}
         end
-    after 5_000 ->
+    after 30_000 ->
         case state.state do
           nil ->
             ## Timeout on connect, just close.
             shutdown(state)
-          {:timeout, 24, _} ->
+          {:timeout, 4, _} ->
             Logger.info("Connection #{inspect(self())} timed out, closing")
             close(state)
           {:timeout, n, p} ->
