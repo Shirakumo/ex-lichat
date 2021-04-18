@@ -5,6 +5,8 @@ This is an implementation of a "Lichat"(https://shirakumo.github.io/lichat) serv
 In addition to the core protocol, ExLichat also supports many of the specified extensions:
 
 - shirakumo-backfill
+- shirakumo-block
+- shirakumo-bridge
 - shirakumo-channel-info
 - shirakumo-channel-trees
 - shirakumo-data
@@ -12,12 +14,15 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 - shirakumo-emotes
 - shirakumo-icon
 - shirakumo-ip
+- shirakumo-link
 - shirakumo-pause
 - shirakumo-quiet
+- shirakumo-reactions
+- shirakumo-search
 - shirakumo-server-management
 - shirakumo-user-info
 
-; TODO: implement bridge, link, markup, shared-identity extensions
+; TODO: implement markup, shared-identity extensions
 ; TODO: Keep server stats of when IPs connect and with which names, etc.
 ; TODO: Expose these stats through an extra interface.
 ; TODO: Track and limit connections per IP
@@ -30,6 +35,7 @@ Setting up a Lichat server is very simple.
 pacman -S elixir
 git clone https://github.com/shirakumo/ex-lichat
 cd ex-lichat
+mix deps.get
 iex -S mix
 ::
 
