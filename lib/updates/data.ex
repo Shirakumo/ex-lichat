@@ -12,7 +12,7 @@ defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :fil
           if User.in_channel?(state.user, channel) do
             case Link.save(type.channel, type.content_type, type.payload) do
               {:ok, url} ->
-                Channel.write(channel, %{update | type: %Update.Message{channel: type.channel, text: url, link: type.filename}})
+                Channel.write(channel, %{update | type: %Update.Message{channel: type.channel, text: url, link: type.content_type}})
               {:error, reason} ->
                 Logger.warn("Failed to save data update as link: #{reason}")
                 Channel.write(channel, update)

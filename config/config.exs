@@ -32,7 +32,7 @@ config :lichat,
   server_name: "Lichat",
   ## The profile authorities to use.
   profiles: [LDAPProfile, LocalProfile],
-  ## Directory to store files in
+  ## Directory to store files in. If null files will not be stored.
   data_directory: "data/",
   ## Link URL prefix. The following path will be appended: /{channel}/{link-id}.{file-type}
   ## Though note that the channel name may itself contain slashes. Whatever the
