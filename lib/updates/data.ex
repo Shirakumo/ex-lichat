@@ -1,5 +1,6 @@
 use Update
 defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :filename, :payload]) do
+  require Logger
   def handle(type, update, state) do
     if is_list(Toolkit.config(:allowed_content_types))
     and not Enum.member?(Toolkit.config(:allowed_content_types), type.content_type) do
@@ -9,13 +10,14 @@ defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :fil
       case Channel.get(type.channel) do
         {:ok, channel} ->
           if User.in_channel?(state.user, channel) do
-            # FIXME: Distribute link only to users that support the extension over data.
-            if Channel.permitted?(channel, Update.Link, update.from) do
-              url = Update.Link.save(update.channel, type.content_type, type.payload)
-              link = %{update | type: %{type | __struct__: Update.Link, payload: url}}
-              Channel.write(channel, link)
-            else
-              Channel.write(channel, update)
+            case Link.save(type.channel, type.content_type, type.payload) do
+              {:ok, url} ->
+                Channel.write(channel, %{update | type: %Update.Message{channel: type.channel, text: url, link: type.filename}})
+              {:error, reason} ->
+                Logger.warn("Failed to save data update as link: #{reason}")
+                Channel.write(channel, update)
+              :disabled ->
+                Channel.write(channel, update)
             end
           else
             Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))

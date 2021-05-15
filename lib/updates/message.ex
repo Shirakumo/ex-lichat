@@ -1,5 +1,5 @@
 use Update
-defupdate(Message, "MESSAGE", [:channel, :text, [:bridge, optional: true]]) do
+defupdate(Message, "MESSAGE", [:channel, :text, [:bridge, optional: true], [:link, optional: true]]) do
   def handle(type, update, state) do
     case Channel.get(type.channel) do
       {:ok, channel} ->

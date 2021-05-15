@@ -24,3 +24,5 @@ lichat-*.tar
 
 *.dat
 config/secret.exs
+data/
+emotes/
