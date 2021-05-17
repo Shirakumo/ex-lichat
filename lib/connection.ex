@@ -252,7 +252,7 @@ defmodule Lichat.Connection do
   end
   
   def establish(state, update) do
-    state = %{state | extensions: MapSet.new(update.type.extensions)}
+    state = %{state | extensions: (if update.type.extensions == nil, do: [], else: MapSet.new(update.type.extensions))}
     primary = Lichat.server_name()
     user = User.connect(User.ensure_user(update.from), self())
     write(state, Update.reply(update, Update.Connect, [
