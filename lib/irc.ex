@@ -49,7 +49,11 @@ defmodule IRC do
       if nick == nil or user == nil do
         {:more, %{state | state: {:init, pass, nick, user}}}
       else
-        {:ok, Update.make(Update.Connect, [from: nick, password: pass, version: Lichat.version()]), %{state | state: nil, name: nick}}
+        {:ok, Update.make(Update.Connect, [from: nick,
+                                           password: pass,
+                                           version: Lichat.version(),
+                                           extensions: ["shirakumo-link"]]),
+         %{state | state: nil, name: nick}}
       end
     end
     case state.state do
