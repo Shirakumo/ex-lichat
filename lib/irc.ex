@@ -299,7 +299,7 @@ defmodule IRC do
   end
 
   def to_safe_name(name) do
-    String.replace(name, ["_", " ", ":"], fn <<char>> ->
+    String.replace(String.downcase(name), ["_", " ", ":"], fn <<char>> ->
       case char do
         ?_ -> "__"
         ?\s -> "_"
