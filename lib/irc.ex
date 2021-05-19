@@ -81,14 +81,20 @@ defmodule IRC do
   end
 
   def decode(state, "JOIN", [chan | _]) do
-    case Channel.get(chan) do
-      {:ok, _} -> reply_update(state, Update.Join, [channel: from_channelname(chan)])
-      :error -> reply_update(state, Update.Create, [channel: from_channelname(chan)])
-    end
+    {:more, Enum.reduce(String.split(chan, ","), state, fn chan, state ->
+        Lichat.Connection.handle_update(state,
+          case Channel.get(chan) do
+            {:ok, _} -> Update.make(Update.Join, [id: 0, from: state.name, channel: from_channelname(chan)])
+            :error -> Update.make(Update.Create, [id: 0, from: state.name, channel: from_channelname(chan)])
+          end)
+      end)}
   end
 
   def decode(state, "PART", [chan | _]) do
-    reply_update(state, Update.Leave, [channel: from_channelname(chan)])
+    {:more, Enum.reduce(String.split(chan, ","), state, fn chan, state ->
+        Lichat.Connection.handle_update(state,
+          Update.make(Update.Leave, [id: 0, from: state.name, channel: from_channelname(chan)]))
+      end)}
   end
 
   def decode(state, "PRIVMSG", [chan | args]) do

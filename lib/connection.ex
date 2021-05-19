@@ -113,7 +113,7 @@ defmodule Lichat.Connection do
     
     case handle_payload(state, data) do
       {:ok, data, state} ->
-        handle_update(state, data)
+        handle_update_raw(state, data)
       {:more, state} ->
         state
       {:error, reason, state} ->
@@ -137,9 +137,23 @@ defmodule Lichat.Connection do
     end
   end
 
-  def handle_update(state, data) do
+  def handle_update_raw(state, data) do
     try do
-      update = Update.parse(data)
+      handle_update(state, Update.parse(data))
+    rescue
+      e in Error.ParseFailure ->
+        write(state, Update.fail(Update.MalformedUpdate, e.message))
+        if state.state == nil, do: close(state), else: state
+      e in Error.UnsupportedUpdate ->
+        write(state, Update.fail(Update.InvalidUpdate, e.message))
+      e in RuntimeError ->
+        write(state, Update.fail(Update.Failure, e.message))
+        if state.state == nil, do: close(state), else: state
+    end
+  end
+
+  def handle_update(state, update) do
+    try do
       case throttle(state) do
         {:ok, state} ->
           case state.state do
@@ -175,11 +189,6 @@ defmodule Lichat.Connection do
           write(state, Update.fail(update, Update.TooManyUpdates))
       end
     rescue
-      e in Error.ParseFailure ->
-        write(state, Update.fail(Update.MalformedUpdate, e.message))
-        if state.state == nil, do: close(state), else: state
-      e in Error.UnsupportedUpdate ->
-        write(state, Update.fail(Update.InvalidUpdate, e.message))
       e in RuntimeError ->
         write(state, Update.fail(Update.Failure, e.message))
         if state.state == nil, do: close(state), else: state
