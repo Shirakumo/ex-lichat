@@ -157,7 +157,7 @@ defmodule Channel do
   def valid_info?(symbol) do
     Symbol.is_symbol(symbol)
     and symbol.package == :keyword
-    and Enum.member?(["NEWS", "TOPIC", "RULES", "CONTACT", "ICON"], symbol.name)
+    and Enum.member?(["NEWS", "TOPIC", "RULES", "CONTACT", "ICON", "URL"], symbol.name)
   end
 
   def valid_info?(symbol, value) do
