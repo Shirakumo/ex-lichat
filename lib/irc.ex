@@ -81,11 +81,12 @@ defmodule IRC do
   end
 
   def decode(state, "JOIN", [chan | _]) do
-    {:more, Enum.reduce(String.split(chan, ","), state, fn chan, state ->
+    {:more, Enum.reduce(String.split(chan, ","), state, fn name, state ->
+        name = from_channelname(name)
         Lichat.Connection.handle_update(state,
-          case Channel.get(chan) do
-            {:ok, _} -> Update.make(Update.Join, [id: 0, from: state.name, channel: from_channelname(chan)])
-            :error -> Update.make(Update.Create, [id: 0, from: state.name, channel: from_channelname(chan)])
+          case Channel.get(name) do
+            {:ok, _} -> Update.make(Update.Join, [id: 0, from: state.name, channel: name])
+            :error -> Update.make(Update.Create, [id: 0, from: state.name, channel: name])
           end)
       end)}
   end
