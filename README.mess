@@ -35,6 +35,7 @@ Setting up a Lichat server is very simple.
 pacman -S elixir
 git clone https://github.com/shirakumo/ex-lichat
 cd ex-lichat
+touch config/secret.exs
 mix deps.get
 iex -S mix
 ::

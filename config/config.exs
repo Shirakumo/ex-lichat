@@ -30,8 +30,8 @@ config :lichat,
            [ip: {0,0,0,0}, port: 1112, acceptors: 2, ssl: [certfile: "config/cert.pem", keyfile: "config/key.pem"]]],
   ## The server name to use. This will occupy the server user and channel.
   server_name: "Lichat",
-  ## The profile authorities to use.
-  profiles: [LDAPProfile, LocalProfile],
+  ## The profile authorities to use. Can be: LDAPProfile, LocalProfile
+  profiles: [LocalProfile],
   ## Directory to store files in. If null files will not be stored.
   data_directory: "data/",
   ## Link URL prefix. The following path will be appended: /{channel}/{link-id}.{file-type}
