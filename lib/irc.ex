@@ -119,6 +119,21 @@ defmodule IRC do
     reply_update(state, Update.Pong)
   end
 
+  def decode(state, "INFO", _args) do
+    Lichat.Connection.write(state, encode_named(server(), "371", [server()], "Protocol #{Lichat.version()}, server #{Lichat.server_version()}"))
+    Lichat.Connection.write(state, encode_named(server(), "374", [server()], "End of INFO list"))
+    {:more, state}
+  end
+
+  def decode(state, "MOTD", _args) do
+    Lichat.Connection.write(state, encode_named(server(), "375", [server()], "Start of MOTD"))
+    Enum.each(String.split(Toolkit.banner(), "\n"), fn line ->
+      Lichat.Connection.write(state, encode_named(server(), "372", [server()], line))
+    end)
+    Lichat.Connection.write(state, encode_named(server(), "376", [server()], "End of MOTD command"))
+    {:more, state}
+  end
+
   def decode(state, "NAMES", [chan | _]) do
     reply_update(state, Update.Users, [channel: from_channelname(chan)])
   end
@@ -150,8 +165,13 @@ defmodule IRC do
     end
   end
 
-  def encode(_state, Update.Connect, update) do
-    encode_named(Lichat.server_name(), "001", [update.from], "Welcome to the Lichat IRC gateway at " <> server())
+  def encode(state, Update.Connect, update) do
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "001", [update.from], "Welcome to the Lichat IRC gateway at #{server()}"))
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "002", [update.from], "Your host is #{:inet_parse.ntoa(state.ip)}"))
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "003", [update.from], "This server was created a while ago."))
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "004", [update.from, server(), Lichat.server_version(), "s", "Cg"]))
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "422", [update.from], "The motd is shown in the ##{server()} channel."))
+    :skip
   end
 
   def encode(state, Update.Message, update) do
