@@ -170,6 +170,7 @@ defmodule IRC do
     Lichat.Connection.write(state, encode_named(Lichat.server_name(), "002", [update.from], "Your host is #{:inet_parse.ntoa(state.ip)}"))
     Lichat.Connection.write(state, encode_named(Lichat.server_name(), "003", [update.from], "This server was created a while ago."))
     Lichat.Connection.write(state, encode_named(Lichat.server_name(), "004", [update.from, server(), Lichat.server_version(), "s", "Cg"]))
+    Lichat.Connection.write(state, encode_named(Lichat.server_name(), "005", [update.from, "CHANTYPES=#", "CASEMAPPING=rfc1459", "CHANNELLEN=32", "NICKLEN=32", "NETWORK=#{server()}"]))
     Lichat.Connection.write(state, encode_named(Lichat.server_name(), "422", [update.from], "The motd is shown in the ##{server()} channel."))
     :skip
   end
