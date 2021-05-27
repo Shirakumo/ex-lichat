@@ -2,6 +2,10 @@ use Update
 defmodule Update.Bridge do
   @behaviour Update
   @impl Update
+
+  Module.register_attribute(Update.Bridge, :is_update?, persist: true)
+  @is_update? true
+
   def type_symbol, do: %Symbol{name: "BRIDGE", package: :lichat}
   defstruct channel: nil
 
