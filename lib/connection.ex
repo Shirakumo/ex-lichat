@@ -176,7 +176,9 @@ defmodule Lichat.Connection do
                 write(state, Update.fail(update, Update.UsernameMismatch))
               else
                 case Update.permitted?(update) do
-                  false -> write(state, Update.fail(update, Update.InsufficientPermissions))
+                  false ->
+                    Logger.info("#{update.from} attempted to #{inspect(type.update)} in #{type.channel} and has been denied.", [intent: :user])
+                    write(state, Update.fail(update, Update.InsufficientPermissions))
                   :error -> write(state, Update.fail(update, Update.MalformedUpdate))
                   :no_such_channel -> write(state, Update.fail(update, Update.NoSuchChannel))
                   :no_such_parent -> write(state, Update.fail(update, Update.NoSuchParentChannel))

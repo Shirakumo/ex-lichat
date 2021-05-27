@@ -33,6 +33,7 @@ defmodule Update.Bridge do
     if Channel.permitted?(channel, Update.Bridge, update.from) do
       Channel.write(channel, %{update | from: type.bridge, type: %{type | bridge: update.from}})
     else
+      Logger.info("#{update.from} attempted to bridge #{inspect(type.update)} in #{type.channel} and has been denied.", [intent: :user])
       Lichat.Connection.write(state, Update.fail(update, Update.InsufficientPermissions))
     end
     state
