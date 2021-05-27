@@ -1,5 +1,6 @@
 use Update
 defmodule Update.Bridge do
+  require Logger
   @behaviour Update
   @impl Update
 
