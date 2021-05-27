@@ -396,32 +396,34 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:permissions, rules}, channel) do
-    perms = Enum.into(rules, channel.permissions, fn [type_symbol, perm] ->
-      {Update.find_type(type_symbol), compile_rule(perm)}
+    perms = Enum.into(rules, channel.permissions, fn [type, perm] ->
+      {Update.ensure_type(type), compile_rule(perm)}
     end)
     {:noreply, %{channel | permissions: perms}}
   end
 
   @impl true
   def handle_cast({:grant, user, update}, channel) do
-    rule = Map.get(channel.permissions, update, %{:default => true})
+    type = Update.ensure_type(type)
+    rule = Map.get(channel.permissions, type, %{:default => true})
     rule = if Map.fetch!(rule, :default) do
       Map.delete(rule, user)
     else
       Map.put(rule, user, true)
     end
-    {:noreply, %{channel | permissions: Map.put(channel.permissions, update, rule)}}
+    {:noreply, %{channel | permissions: Map.put(channel.permissions, type, rule)}}
   end
 
   @impl true
   def handle_cast({:deny, user, update}, channel) do
-    rule = Map.get(channel.permissions, update, %{:default => true})
+    type = Update.ensure_type(type)
+    rule = Map.get(channel.permissions, type, %{:default => true})
     rule = if Map.fetch!(rule, :default) do
       Map.put(rule, user, false)
     else
       Map.delete(rule, user)
     end
-    {:noreply, %{channel | permissions: Map.put(channel.permissions, update, rule)}}
+    {:noreply, %{channel | permissions: Map.put(channel.permissions, type, rule)}}
   end
 
   @impl true

@@ -85,6 +85,10 @@ defmodule Update do
     ## TODO: cache list_types
     Enum.find(list_types(), &(&1.type_symbol == update_name))
   end
+
+  def ensure_type(type) when is_atom(type), do: type
+  def ensure_type(type) when is_struct(type), do: find_type(type)
+  def ensure_type(type) when is_binary(type), do: find_type(Symbol.li(type))
   
   def from_list([symbol | args]) do
     if symbol.package == :lichat do
