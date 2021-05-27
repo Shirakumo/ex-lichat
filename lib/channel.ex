@@ -404,6 +404,7 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:grant, user, update}, channel) do
+    user = String.downcase(user)
     type = Update.ensure_type(update)
     rule = Map.get(channel.permissions, type, %{:default => true})
     rule = if Map.fetch!(rule, :default) do
@@ -416,6 +417,7 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:deny, user, update}, channel) do
+    user = String.downcase(user)
     type = Update.ensure_type(update)
     rule = Map.get(channel.permissions, type, %{:default => true})
     rule = if Map.fetch!(rule, :default) do
@@ -583,8 +585,8 @@ defmodule Channel do
 
   defp compile_rule([symbol | names]) do
     case symbol.name do
-      "+" -> Map.put(Map.new(names, fn n -> {n, true} end), :default, false)
-      "-" -> Map.put(Map.new(names, fn n -> {n, false} end), :default, true)
+      "+" -> Map.put(Map.new(names, fn n -> {String.downcase(n), true} end), :default, false)
+      "-" -> Map.put(Map.new(names, fn n -> {String.downcase(n), false} end), :default, true)
     end
   end
 
