@@ -404,7 +404,7 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:grant, user, update}, channel) do
-    type = Update.ensure_type(type)
+    type = Update.ensure_type(update)
     rule = Map.get(channel.permissions, type, %{:default => true})
     rule = if Map.fetch!(rule, :default) do
       Map.delete(rule, user)
@@ -416,7 +416,7 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:deny, user, update}, channel) do
-    type = Update.ensure_type(type)
+    type = Update.ensure_type(update)
     rule = Map.get(channel.permissions, type, %{:default => true})
     rule = if Map.fetch!(rule, :default) do
       Map.put(rule, user, false)
@@ -512,7 +512,10 @@ defmodule Channel do
 
   @impl true
   def handle_call(:permissions, _from, channel) do
-    {:reply, Enum.map(channel.permissions, fn {type, rule} -> [apply(type, :type_symbol, []), decompile_rule(rule)] end), channel}
+    {:reply, channel.permissions
+    |> Enum.reject(fn {type, _} -> type == false end)
+    |> Enum.map(fn {type, rule} -> [apply(type, :type_symbol, []), decompile_rule(rule)] end),
+     channel}
   end
 
   @impl true
