@@ -176,7 +176,7 @@ defmodule IRC do
   end
 
   def encode(state, Update.Message, update) do
-    if update.from != state.name do
+    if update.from != state.name or is_binary(update.type.bridge) do
       Enum.each(String.split(update.type.text, "\n"), fn line ->
         Lichat.Connection.write(state, encode_named(update.from, "PRIVMSG", [to_channelname(update.type.channel)], line))
       end)
