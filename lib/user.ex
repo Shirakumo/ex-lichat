@@ -59,7 +59,6 @@ defmodule User do
 
   def join(user, channel) do
     GenServer.call(user, {:join, channel})
-    user
   end
 
   def leave(user, channel) do
@@ -202,9 +201,16 @@ defmodule User do
 
   @impl true
   def handle_call({:join, from}, _from, user) do
-    ref = Process.monitor(from)
-    Channel.join(from, {self(), user.name})
-    {:reply, :ok, %{user | channels: Map.put(user.channels, from, {ref, Channel.name(from)})}}
+    cond do
+      Toolkit.config(:max_channels_per_user) <= map_size(user.channels) ->
+        {:reply, :too_many_channels, user}
+      Map.has_key?(user.channels, from) ->
+        {:reply, :already_in_channel, user}
+      true ->
+        ref = Process.monitor(from)
+        Channel.join(from, {self(), user.name})
+        {:reply, :ok, %{user | channels: Map.put(user.channels, from, {ref, Channel.name(from)})}}
+    end
   end
 
   @impl true

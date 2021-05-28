@@ -41,6 +41,9 @@ defupdate UsernameTaken, "USERNAME-TAKEN",
 defupdate NoSuchChannel, "NO-SUCH-CHANNEL",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "The requested channel does not exist."]]
+defupdate TooManyChannels, "TOO-MANY-CHANNELS",
+  [[:update_id, symbol: "UPDATE-ID"],
+   [:text, default: "You have already joined too many channels."]]
 defupdate RegistrationRejected, "REGISTRATION-REJECTED",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "The profile registration request was rejected."]]

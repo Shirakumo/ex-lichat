@@ -19,6 +19,8 @@ config :lichat,
   max_shares_per_user: 10,
   ## Around 8 MB max limit.
   max_update_size: 8388608,
+  ## How many channels a user can inhabit at most.
+  max_channels_per_user: 50,
   ## Keep the last 100 updates.
   channel_backlog: 100,
   ## Around 2 months of lifetime before expiry.
