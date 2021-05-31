@@ -5,7 +5,8 @@ config :lichat,
   allowed_content_types: ["image/png", "image/jpeg", "image/gif", "image/svg+xml",
                           "audio/webm", "audio/ogg", "audio/mpeg", "audio/mp3", "audio/mp4", "audio/flac",
                           "video/webm", "video/ogg", "video/mp4",
-                          "application/ogg"],
+                          "application/ogg", "application/zip",
+                          "text/plain", "text/html"],
   ## Which mime-type should be allowed for profile or channel icons.
   allowed_icon_content_types: ["image/png", "image/gif"],
   ## The maximum size of an icon (~1MB)
