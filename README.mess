@@ -14,6 +14,7 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 - shirakumo-emotes
 - shirakumo-icon
 - shirakumo-ip
+- shirakumo-last-read
 - shirakumo-link
 - shirakumo-pause
 - shirakumo-quiet

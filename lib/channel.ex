@@ -1,7 +1,17 @@
 defmodule Channel do
   require Logger
   use GenServer
-  defstruct name: nil, registrant: nil, permissions: %{}, users: %{}, meta: %{}, lifetime: Toolkit.config(:channel_lifetime), expiry: nil, pause: 0, last_update: %{}, quiet: MapSet.new()
+  defstruct name: nil,
+    registrant: nil,
+    permissions: %{},
+    users: %{},
+    meta: %{},
+    lifetime: Toolkit.config(:channel_lifetime),
+    expiry: nil,
+    pause: 0,
+    last_update: %{},
+    quiet: MapSet.new(),
+    last_read: %{}
 
   def default_channel_permissions, do: Map.new([
         {Update.Backfill, true},
@@ -284,6 +294,15 @@ defmodule Channel do
     GenServer.call(channel, {:permitted?, type, user})
   end
 
+  def last_read(channel, user) do
+    GenServer.call(channel, {:last_read, user})
+  end
+
+  def last_read(channel, user, from, id) do
+    GenServer.cast(channel, {:last_read, user, from, id})
+    channel
+  end
+
   def name(channel) do
     GenServer.call(channel, :name)
   end
@@ -444,6 +463,11 @@ defmodule Channel do
   end
 
   @impl true
+  def handle_cast({:last_read, user, from, id}, channel) do
+    {:noreply, %{channel | last_read: Map.put(channel.last_read, user, {from, id})}}
+  end
+
+  @impl true
   def handle_call({:send, update}, _from, channel) do
     ## We duplicate handle_cast({:send ..}) here almost to the letter. This is bad, should factor out.
     if MapSet.member?(channel.quiet, String.downcase(update.from)) do
@@ -541,6 +565,11 @@ defmodule Channel do
   end
 
   @impl true
+  def handle_call({:last_read, user}, _from, channel) do
+    {:reply, Map.get(channel.last_read, user), channel}
+  end
+
+  @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, channel) do
     case Map.get(channel.users, pid) do
       {name, _ref, _join} ->
@@ -549,7 +578,8 @@ defmodule Channel do
           handle_cast({:send, Update.make(Update.Leave, [
                               from: name,
                               channel: channel.name
-                            ])}, channel)
+                            ])},
+            %{channel | last_read: Map.delete(channel.last_read, name)})
         else
           {:noreply, channel}
         end

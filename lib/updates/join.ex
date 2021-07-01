@@ -10,6 +10,7 @@ defupdate(Join, "JOIN", [:channel]) do
             Lichat.Connection.write(state, Update.fail(update, Update.AlreadyInChannel))
           :ok ->
             User.join(state.user, channel)
+            Channel.last_read(channel, update.from, update.from, update.id)
             Channel.write(channel, update)
             pause = Channel.pause(channel)
             if 0 < pause, do: Lichat.Connection.write(state, Update.make(Pause, by: pause))
