@@ -19,6 +19,7 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 - shirakumo-pause
 - shirakumo-quiet
 - shirakumo-reactions
+- shirakumo-replies
 - shirakumo-search
 - shirakumo-server-management
 - shirakumo-typing

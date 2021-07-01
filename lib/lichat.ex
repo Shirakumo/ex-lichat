@@ -12,7 +12,8 @@ defmodule Lichat do
                        "shirakumo-pause", "shirakumo-quiet", "shirakumo-server-management", "shirakumo-ip",
                        "shirakumo-channel-trees", "shirakumo-backfill", "shirakumo-user-info",
                        "shirakumo-icon", "shirakumo-bridge", "shirakumo-reactions", "shirakumo-block",
-                       "shirakumo-search", "shirakumo-link", "shirakumo-last-read", "shirakumo-typing"]
+                       "shirakumo-search", "shirakumo-link", "shirakumo-last-read", "shirakumo-typing",
+                       "shirakumo-replies"]
   
   def compatible?(version) do
     Enum.member?(compatible_versions(), version)
