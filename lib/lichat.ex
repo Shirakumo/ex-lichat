@@ -51,6 +51,7 @@ defmodule Lichat do
   end
 
   def notify(message) do
+    Logger.info(message)
     Channel.write_sync(Channel.primary(), Update.make(Update.Message, [
               channel: server_name(),
               from: server_name(),
@@ -65,9 +66,9 @@ defmodule Lichat do
   end
 
   def offload() do
-      Channels.offload()
-      Blacklist.offload()
-      LocalProfile.offload(LocalProfile)
+    Channels.offload()
+    Blacklist.offload()
+    LocalProfile.offload(LocalProfile)
   end
 
   def reload() do
