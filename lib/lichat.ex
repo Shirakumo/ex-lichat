@@ -73,7 +73,7 @@ defmodule Lichat do
 
   def reload() do
     Profile.reload()
-    Emote.reload(Emote)
+    Emote.reload(Emote, true)
     Blacklist.reload()
   end
 end
