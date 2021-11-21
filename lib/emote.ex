@@ -1,63 +1,64 @@
 defmodule Emote do
   require Logger
-  use Agent
-  defstruct name: nil, type: nil, payload: nil
+  defstruct channel: nil, name: nil, type: nil, payload: nil
 
-  def start_link(opts) do
-    case Agent.start_link(fn -> :error end, opts) do
-      {:ok, pid} ->
-        reload(pid)
-        {:ok, pid}
-      x -> x
-    end
+  def emote?(channel, name) do
+    Enum.any?(Toolkit.config(:allowed_emote_content_types),
+      fn type -> File.exists?(file_path(channel, name, type)) end)
   end
 
-  def reload(server), do: reload(server, false)
-  def reload(server, notify) do
-    Logger.info("Reloading emotes")
-    dir = Toolkit.config(:emote_directory)
-    case File.ls(dir) do
-      {:ok, files} ->
-        old = case Agent.get(server, &(&1)) do
-                :error -> %{}
-                emotes -> emotes
-              end
-        emotes = Map.new(Enum.reject(Enum.map(files, &load_emote(dir <> &1)), &(&1 == nil)), &{&1.name, &1})
-        Agent.update(server, fn _ -> emotes end)
-        if notify do
-          users = User.list(:pids)
-          Enum.each(emotes, fn {name, emote} ->
-            if not Map.has_key?(old, name) do
-              Enum.each(users, fn {_name, user} ->
-                User.write(user, Update.make(Update.Emote, [
-                      from: Lichat.server_name(),
-                      name: emote.name,
-                      content_type: emote.type,
-                      payload: emote.payload ]))
-              end)
-            end
-          end)
+  def list(channel, excluded \\ []) do
+    excluded = Enum.map(excluded, &String.downcase/1)
+    Enum.flat_map(File.ls!("#{Toolkit.config!(:emote_directory)}/#{channel}/"), 
+      fn file ->
+        if Path.rootname(Path.basename(file)) in excluded do
+          []
+        else
+          [load_emote(file)]
         end
-        emotes
-      {:error, reason} ->
-        error = :file.format_error(reason)
-        Logger.error("Failed to reload emotes: #{error}")
-        %{}
+      end)
+  end
+
+  def save(channel, name, content_type, payload) do
+    case Toolkit.config!(:emote_directory) do
+      nil -> {:error, "Disabled."}
+      directory ->
+        cond do
+          is_list(Toolkit.config(:allowed_emote_content_types))
+          and not Enum.member?(Toolkit.config(:allowed_emote_content_types), content_type) ->
+            {:bad_content_type, Toolkit.config(:allowed_emote_content_types)}
+        payload == nil or payload == "" ->
+            delete(channel, name)
+            :ok
+        true ->
+            path = directory <> file_path(channel, name, content_type)
+            payload = Base.decode64!(payload)
+            if Toolkit.config(:max_emote_size) < byte_size(payload) do
+              :too_large
+            else
+              case File.mkdir_p(Path.dirname(path)) do
+                {:error, _} -> {:error, "Failure creating directory for file."}
+                :ok ->
+                  case File.write(path, payload) do
+                    {:error, _} -> {:error, "Failure writing file."}
+                    :ok -> :ok
+                  end
+              end
+            end
+        end
     end
   end
 
-  def emote?(server, string) do
-    Agent.get(server, fn map -> Map.has_key?(map, string) end)
+  def delete(channel, name) do
+    Enum.each(Toolkit.config(:allowed_emote_content_types),
+      fn type -> File.rm(file_path(channel, name, type)) end)
   end
 
-  def list(server) do
-    case Agent.get(server, &(&1)) do
-      :error -> reload(server)
-      emotes -> emotes
-    end
+  def clear(channel) do
+    File.rm_rf("#{Toolkit.config!(:emote_directory)}/#{channel}/")
   end
 
-  def load_emote(file) do
+  defp load_emote(file) do
     case File.read(file) do
       {:ok, content} ->
         name = Path.rootname(Path.basename(file))
@@ -69,5 +70,10 @@ defmodule Emote do
         Logger.error("Failed to load emote #{file}: #{:file.format_error(reason)}")
         nil
     end
+  end
+  
+  defp file_path(channel, name, content_type) do
+    [ ext | _ ] = MIME.extensions(content_type)
+    "/#{String.downcase(channel)}/#{String.downcase(name)}.#{ext}"
   end
 end

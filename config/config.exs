@@ -9,6 +9,8 @@ config :lichat,
                           "text/plain", "text/html"],
   ## Which mime-type should be allowed for profile or channel icons.
   allowed_icon_content_types: ["image/png", "image/gif"],
+  ## Which mime-type should be allowed for emotes.
+  allowed_emote_content_types: ["image/png", "image/gif"],
   ## The maximum size of an icon (~1MB)
   max_icon_size: 1048576,
   ## How many connections a single user can have simultaneously.
@@ -22,6 +24,10 @@ config :lichat,
   max_update_size: 8388608,
   ## How many channels a user can inhabit at most.
   max_channels_per_user: 50,
+  ## How many emotes can be registered per main channel.
+  max_emotes_per_channel: 200,
+  ## How big an emote can be (512kb).
+  max_emote_size: 524288,
   ## Keep the last 100 updates.
   channel_backlog: 100,
   ## Around 2 months of lifetime before expiry.

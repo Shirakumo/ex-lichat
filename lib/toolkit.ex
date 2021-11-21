@@ -83,8 +83,8 @@ defmodule Toolkit do
     end
   end
 
-  def valid_emote?(string) do
-    Unicode.emoji?(string) or Emote.emote?(Emote, string)
+  def valid_emote?(channel, string) do
+    Unicode.emoji?(string) or Emote.emote?(channel, string)
   end
   
   def config(key, default \\ nil) do

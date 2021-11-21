@@ -31,7 +31,6 @@ defmodule Lichat do
       {Users, name: Users},
       {Channels, name: Channels},
       {Profile, name: Profile},
-      {Emote, name: Emote},
       {Blacklist, name: Blacklist},
       Init,
       {Server,
@@ -73,7 +72,6 @@ defmodule Lichat do
 
   def reload() do
     Profile.reload()
-    Emote.reload(Emote, true)
     Blacklist.reload()
   end
 end

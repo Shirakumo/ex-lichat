@@ -75,6 +75,9 @@ defupdate BadContentType, "BAD-CONTENT-TYPE",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "Content of the given type is not accepted by this server."],
    [:allowed_content_types, symbol: "ALLOWED-CONTENT-TYPES"]]
+defupdate EmoteListFull, "EMOTE-LIST-FULL",
+  [[:update_id, symbol: "UPDATE-ID"],
+   [:text, default: "The list of emotes is already full."]]
 defupdate NoSuchParentChannel, "NO-SUCH-PARENT-CHANNEL",
   [[:update_id, symbol: "UPDATE-ID"],
    [:text, default: "The channel you are trying to create a child channel under does not exist."]]
