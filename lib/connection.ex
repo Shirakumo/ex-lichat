@@ -191,6 +191,9 @@ defmodule Lichat.Connection do
           write(state, Update.fail(update, Update.TooManyUpdates))
       end
     rescue
+      Protocol.UndefinedError ->
+        write(state, Update.fail(Update.MalformedUpdate))
+        if state.state == nil, do: close(state), else: state
       e in RuntimeError ->
         write(state, Update.fail(Update.Failure, e.message))
         if state.state == nil, do: close(state), else: state
