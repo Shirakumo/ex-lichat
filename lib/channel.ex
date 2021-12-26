@@ -314,6 +314,13 @@ defmodule Channel do
   def usernames(channel) do
     GenServer.call(channel, :usernames)
   end
+
+  def permissions(channel) when is_binary(channel) do
+    case Channel.get(channel) do
+      {:ok, channel} -> permissions(channel)
+      :error -> :no_such_channel
+    end
+  end
   
   def permissions(channel) do
     GenServer.call(channel, :permissions)
