@@ -57,6 +57,14 @@ defmodule Blacklist do
     |> Stream.run()
   end
 
+  def list() do
+    Agent.get(__MODULE__, fn blacklist -> MapSet.to_list(blacklist.names) end)
+  end
+
+  def ip_list() do
+    Agent.get(__MODULE__, fn blacklist -> blacklist.ips end)
+  end
+
   def has?(name) when is_binary(name) do
     name = String.downcase(name)
     Agent.get(__MODULE__, fn blacklist -> MapSet.member?(blacklist.names, name) end)
