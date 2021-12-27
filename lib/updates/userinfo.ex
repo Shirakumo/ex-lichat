@@ -15,6 +15,7 @@ defupdate(UserInfo, "USER-INFO", [:target, [:info, required: false]]) do
            end
     Lichat.Connection.write(state, Update.reply(update, Update.UserInfo, [
               from: Lichat.server_name(),
+              target: type.target,
               connections: connections,
               registered: registered,
               info: info ]))
