@@ -9,9 +9,11 @@ defmodule Emote do
 
   def list(channel, excluded \\ []) do
     excluded = Enum.map(excluded, &String.downcase/1)
-    Enum.flat_map(File.ls!("#{Toolkit.config!(:emote_directory)}/#{channel}/"), 
+    dir = "#{Toolkit.config!(:emote_directory)}/#{channel}/"
+    File.mkdir_p!(dir)
+    Enum.flat_map(File.ls!(dir),
       fn file ->
-        file = "#{Toolkit.config!(:emote_directory)}/#{channel}/#{file}"
+        file = "#{dir}/#{file}"
         if Path.rootname(Path.basename(file)) in excluded do
           []
         else
