@@ -183,7 +183,9 @@ defmodule Update do
   end
 
   def is_update?(module) do
-    case Keyword.get(module.__info__(:attributes), :is_update?) do
+    is_atom(module)
+    and function_exported?(module, :__info__, 1)
+    and case Keyword.get(module.__info__(:attributes), :is_update?) do
       [x] -> x
       nil -> false
     end

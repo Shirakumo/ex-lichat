@@ -354,6 +354,26 @@ defmodule Channel do
   def data(channel) do
     GenServer.call(channel, :data)
   end
+
+  def make_admin(channel, user) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    make_admin(channel, user)
+  end
+  def make_admin(channel, user) do
+    Enum.each(default_channel_permissions(), fn {type, rule} ->
+      if rule == :registrant do
+        grant(channel, user, type)
+      end
+    end)
+  end
+  def make_admin(user) do
+    channel = primary()
+    Enum.each(default_primary_channel_permissions(), fn {type, rule} ->
+      if rule == :registrant do
+        grant(channel, user, type)
+      end
+    end)
+  end
   
   @impl true
   def init(channel) do

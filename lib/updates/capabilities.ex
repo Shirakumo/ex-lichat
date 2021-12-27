@@ -6,7 +6,7 @@ defupdate(Capabilities, "CAPABILITIES", [:channel, [:permitted, required: false]
         if User.in_channel?(state.user, channel) do
           permitted = Channel.data(channel).permissions
           |> Enum.filter(fn {type, map} ->
-            Symbol.is_symbol(type)
+            Update.is_update?(type)
             and Map.get(map, update.from, Map.get(map, :default, false))
           end)
           |> Enum.map(fn {type, _map} ->
