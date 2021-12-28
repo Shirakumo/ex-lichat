@@ -66,9 +66,9 @@ defmodule History do
     end
   end
 
-  def backlog(channel, limit \\ 100) do
+  def backlog(channel, since \\ 0, limit \\ 100) do
     if Process.whereis(History) != nil do
-      map_result(Query.backlog(channel: channel, limit: limit))
+      map_result(Query.backlog(channel: channel, since: since, limit: limit))
     else
       []
     end
