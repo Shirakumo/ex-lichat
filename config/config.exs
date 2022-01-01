@@ -59,6 +59,24 @@ config :lichat,
   ## File to store banner in
   banner_file: "config/banner.txt"
 
+## History support requires Postgres server
+# config :lichat, History,
+#   hostname: "...",
+#   username: "...",
+#   password: "...",
+#   database: "..."
+
+## LDAPProfile support requires an LDAP server
+# config :lichat, LDAPProfile,
+#   host: {...},
+#   base: "...",
+#   account_identifier: "...",
+#   ssl: false,
+#   port: 389,
+#   timeout: 3000,
+#   bind_dn: "...",
+#   bind_pw: "..."
+
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:intent]
