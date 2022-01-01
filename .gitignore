@@ -26,3 +26,8 @@ lichat-*.tar
 config/secret.exs
 data/
 emotes/
+
+# Emacs
+*~
+.\#*
+\#*\#
