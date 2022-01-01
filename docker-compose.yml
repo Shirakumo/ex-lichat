@@ -1,0 +1,10 @@
+version: '2.4'
+
+services:
+  lichat:
+    image: shirakumo/ex-lichat
+    build:
+      context: .
+    restart: unless-stopped
+    volumes:
+      - /opt/lichat/var

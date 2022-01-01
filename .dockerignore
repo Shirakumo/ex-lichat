@@ -1,0 +1,15 @@
+Dockerfile
+docker-compose.yml
+.dockerignore
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+lichat-*.tar
+*.dat
+data/
+emotes/
+*~
