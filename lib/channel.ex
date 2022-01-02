@@ -35,6 +35,7 @@ defmodule Channel do
         {Update.Permissions, :registrant},
         {Update.Pull, true},
         {Update.Quiet, :registrant},
+        {Update.Quieted, :registrant},
         {Update.React, true},
         {Update.Search, true},
         {Update.SetChannelInfo, :registrant},
@@ -64,6 +65,7 @@ defmodule Channel do
         {Update.Permissions, false},
         {Update.Pull, true},
         {Update.Quiet, :registrant},
+        {Update.Quieted, :registrant},
         {Update.React, true},
         {Update.Search, false},
         {Update.SetChannelInfo, false},
@@ -109,6 +111,7 @@ defmodule Channel do
         {Update.Pong, true},
         {Update.Pull, false},
         {Update.Quiet, false},
+        {Update.Quieted, false},
         {Update.React, true},
         {Update.Register, true},
         {Update.Search, true},
@@ -325,6 +328,10 @@ defmodule Channel do
   
   def users(channel) do
     GenServer.call(channel, :users)
+  end
+
+  def quieted(channel) do
+    GenServer.call(channel, :quieted)
   end
 
   def usernames(channel) do
@@ -572,6 +579,11 @@ defmodule Channel do
   @impl true
   def handle_call(:users, _from, channel) do
     {:reply, Map.keys(channel.users), channel}
+  end
+
+  @impl true
+  def handle_call(:quieted, _from, channel) do
+    {:reply, MapSet.to_list(channel.quiet), channel}
   end
 
   @impl true
