@@ -80,7 +80,7 @@ defmodule History do
     [time_min, time_max] = Toolkit.getf(query, :clock, [true, true])
     map_result(Query.search(
           channel: channel,
-          from: from,
+          from: ensure_regex(from),
           time_min: ensure_time(time_min),
           time_max: ensure_time(time_max),
           text: ensure_regex(text),
