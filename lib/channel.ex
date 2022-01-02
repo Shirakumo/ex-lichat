@@ -688,6 +688,7 @@ defmodule Channel do
   end
 
   defp evaluate_permissions(permissions, registrant) do
+    registrant = String.downcase(registrant)
     Map.new(permissions, fn {t, r} ->
       case r do
         true -> {t, %{:default => true}}
