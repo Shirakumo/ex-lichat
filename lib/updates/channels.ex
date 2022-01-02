@@ -1,5 +1,5 @@
 use Update
-defupdate(Channels, "CHANNELS", [[:channel, required: false]]) do
+defupdate(Channels, "CHANNELS", [[:channels, required: false], [:channel, required: false]]) do
   require Logger 
   def handle(type, update, state) do
     channels = Channel.list(type.channel, :pids)
