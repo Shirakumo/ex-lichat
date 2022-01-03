@@ -349,6 +349,26 @@ defmodule Channel do
     GenServer.call(channel, :permissions)
   end
 
+  def is_primary?(channel) when is_binary(channel) do
+    # What the fuck is there no case insensitive compare op?
+    String.downcase(channel) == String.downcase(Lichat.server_name)
+  end
+
+  def is_primary?(channel) do
+    is_primary?(name(channel))
+  end
+
+  def parent(channel) when is_binary(channel) do
+    case Regex.run(~r/^(.*)\//u, channel) do
+      [_, name] -> name
+      nil -> Lichat.server_name()
+    end
+  end
+
+  def parent(channel) do
+    get(parent(name(channel)))
+  end
+
   def info(channel) do
     GenServer.call(channel, :info)
   end

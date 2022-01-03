@@ -3,8 +3,13 @@ defmodule Emote do
   defstruct channel: nil, name: nil, type: nil, payload: nil
 
   def emote?(channel, name) do
-    Enum.any?(Toolkit.config(:allowed_emote_content_types),
+    found = Enum.any?(Toolkit.config(:allowed_emote_content_types),
       fn type -> File.exists?(file_path(channel, name, type)) end)
+    cond do
+      found -> true
+      Channel.is_primary?(channel) -> false
+      true -> emote?(Channel.parent(channel), name)
+    end
   end
 
   def list(channel, excluded \\ []) do
