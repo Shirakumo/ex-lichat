@@ -3,18 +3,22 @@ defmodule Emote do
   defstruct channel: nil, name: nil, type: nil, payload: nil
 
   def emote?(channel, name) do
-    found = Enum.any?(Toolkit.config(:allowed_emote_content_types),
-      fn type -> File.exists?(file_path(channel, name, type)) end)
-    cond do
-      found -> true
-      Channel.is_primary?(channel) -> false
-      true -> emote?(Channel.parent(channel), name)
+    case Toolkit.config!(:emote_directory) do
+      nil -> false
+      directory ->
+        found = Enum.any?(Toolkit.config(:allowed_emote_content_types),
+        fn type -> File.exists?(directory <> file_path(channel, name, type)) end)
+        cond do
+          found -> true
+          Channel.is_primary?(channel) -> false
+          true -> emote?(Channel.parent(channel), name)
+        end
     end
   end
 
   def list(channel, excluded \\ []) do
     excluded = Enum.map(excluded, &String.downcase/1)
-    dir = "#{Toolkit.config!(:emote_directory)}/#{channel}/"
+    dir = "#{Toolkit.config!(:emote_directory)}/#{String.downcase(channel)}/"
     File.mkdir_p!(dir)
     Enum.flat_map(File.ls!(dir),
       fn file ->
@@ -22,7 +26,7 @@ defmodule Emote do
         if Path.rootname(Path.basename(file)) in excluded do
           []
         else
-          case load_emote(file) do
+          case load_emote(channel, file) do
             nil -> []
             emote -> [emote]
           end
@@ -61,20 +65,28 @@ defmodule Emote do
   end
 
   def delete(channel, name) do
-    Enum.each(Toolkit.config(:allowed_emote_content_types),
-      fn type -> File.rm(file_path(channel, name, type)) end)
+    case Toolkit.config!(:emote_directory) do
+      nil -> {:error, "Disabled."}
+      directory ->
+        Enum.each(Toolkit.config(:allowed_emote_content_types),
+          fn type -> File.rm(directory <> file_path(channel, name, type)) end)
+    end
   end
 
   def clear(channel) do
-    File.rm_rf("#{Toolkit.config!(:emote_directory)}/#{channel}/")
+    case Toolkit.config!(:emote_directory) do
+      nil -> {:error, "Disabled."}
+      directory -> File.rm_rf("#{directory}/#{String.downcase(channel)}/")
+    end
   end
 
-  defp load_emote(file) do
+  defp load_emote(channel, file) do
     case File.read(file) do
       {:ok, content} ->
         name = Path.rootname(Path.basename(file))
         %Emote{
           name: name,
+          channel: channel,
           type: MIME.from_path(file),
           payload: Base.encode64(content)}
       {:error, reason} ->
