@@ -1,7 +1,7 @@
 use Update
 defupdate(Emotes, "EMOTES", [:names, [:channel, optional: true]]) do
   def handle(type, update, state) do
-    channelname = if is_nil(type.channel), do: Channel.primary(), else: type.channel
+    channelname = if is_nil(type.channel), do: Lichat.server_name(), else: type.channel
     case Channel.get(channelname) do
       {:ok, channel} ->
         if User.in_channel?(state.user, channel) do
