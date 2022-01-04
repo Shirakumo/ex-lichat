@@ -85,8 +85,8 @@ defmodule IRC do
         name = from_channelname(name)
         Lichat.Connection.handle_update(state,
           case Channel.get(name) do
-            {:ok, _} -> Update.make(Update.Join, [id: 0, from: state.name, channel: name])
-            :error -> Update.make(Update.Create, [id: 0, from: state.name, channel: name])
+            {:ok, _} -> Update.make(Update.Join, [id: Toolkit.id(), from: state.name, channel: name])
+            :error -> Update.make(Update.Create, [id: Toolkit.id(), from: state.name, channel: name])
           end)
       end)}
   end
@@ -94,7 +94,7 @@ defmodule IRC do
   def decode(state, "PART", [chan | _]) do
     {:more, Enum.reduce(String.split(chan, ","), state, fn chan, state ->
         Lichat.Connection.handle_update(state,
-          Update.make(Update.Leave, [id: 0, from: state.name, channel: from_channelname(chan)]))
+          Update.make(Update.Leave, [id: Toolkit.id(), from: state.name, channel: from_channelname(chan)]))
       end)}
   end
 
@@ -154,7 +154,7 @@ defmodule IRC do
   end
 
   def reply_update(state, type, args \\ []) do
-    {:ok, Update.make(type, [{:id, 0} | [{:from, state.name} | args]]), state}
+    {:ok, Update.make(type, [{:id, Toolkit.id()} | [{:from, state.name} | args]]), state}
   end
 
   @impl Lichat.Connection
