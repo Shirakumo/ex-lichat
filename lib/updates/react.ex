@@ -7,7 +7,7 @@ defupdate(React, "REACT", [:channel, :target, [:update_id, symbol: "UPDATE-ID"],
           not User.in_channel?(state.user, channel) ->
             Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
           not Toolkit.valid_emote?(type.channel, type.emote) ->
-            Lichat.Connection.write(state, Update.fail(update, Update.MalformedUpdate))
+            Lichat.Connection.write(state, Update.fail(update, Update.UpdateFailure))
           true ->
             Channel.write(channel, update)
         end
