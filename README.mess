@@ -30,6 +30,9 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 ; TODO: Expose these stats through an extra interface.
 ; TODO: Track and limit connections per IP
 ; TODO: send disconnect when connection process terminates from application shutdown
+; TODO: be stricter about image payloads in emotes and especially channel/user-info:
+;   - Automatically resize icons to fit a predetermined max-size
+;   - Reject payload if the payload is not an actual png/jpeg/gif file
 
 ## How To
 Setting up a Lichat server is very simple.
