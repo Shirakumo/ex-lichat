@@ -6,6 +6,7 @@ defupdate(Backfill, "BACKFILL", [:channel, [:since, optional: true]]) do
         if User.in_channel?(state.user, channel) do
           since = if is_number(type.since), do: type.since, else: 0
           Enum.each(History.backlog(type.channel, since), &Lichat.Connection.write(state, &1))
+          Lichat.Connection.write(state, update)
         else
           Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
