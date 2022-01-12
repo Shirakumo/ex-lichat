@@ -6,7 +6,8 @@ defupdate(Emotes, "EMOTES", [[:names, optional: true], [:channel, optional: true
       {:ok, channel} ->
         if User.in_channel?(state.user, channel) do
           names = if is_list(type.names), do: type.names, else: []
-          Enum.each(Emote.list(channelname, names), fn emote ->
+          emotes = Emote.list(channelname, names)
+          Enum.each(emotes, fn emote ->
             Lichat.Connection.write(state, Update.reply(update, Update.Emote, [
                       from: Lichat.server_name(),
                       channel: channelname,
@@ -14,6 +15,7 @@ defupdate(Emotes, "EMOTES", [[:names, optional: true], [:channel, optional: true
                           content_type: emote.type,
                       payload: emote.payload ]))
           end)
+          Lichat.Connection.write(state, %{update | type: %{type | names: Enum.map(emotes, &Map.get(&1, :name))}})
         else
           Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
         end
