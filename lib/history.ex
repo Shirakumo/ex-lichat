@@ -48,15 +48,28 @@ defmodule History do
 
   def record(update) do
     if Process.whereis(History) != nil do
-      Query.record(
-        id: to_string(update.id),
-        clock: update.clock,
-        from: update.from,
-        bridge: Map.get(update.type, :bridge),
-        channel: update.type.channel,
-        text: update.type.text,
-        rich: Map.get(update.type, :rich),
-        markup: Map.get(update.type, :markup))
+      case update.type.__struct__ do
+        Update.React ->
+          Query.record(
+            id: to_string(update.id),
+            clock: update.clock,
+            from: update.from,
+            bridge: Map.get(update.type, :bridge),
+            channel: update.type.channel,
+            text: update.type.emote,
+            rich: update.type.target <> "  " <> to_string(update.type.update_id),
+            markup: "text/x-lichat-reaction")
+        _ ->
+          Query.record(
+            id: to_string(update.id),
+            clock: update.clock,
+            from: update.from,
+            bridge: Map.get(update.type, :bridge),
+            channel: update.type.channel,
+            text: update.type.text,
+            rich: Map.get(update.type, :rich),
+            markup: Map.get(update.type, :markup))
+      end
     end
   end
 
@@ -92,13 +105,26 @@ defmodule History do
   defp map_result({:error, _}), do: []
 
   defp map_result(map) do
-    Update.make(Update.Message, [
-          id: map[:id],
-          clock: map[:clock],
-          from: map[:from],
-          bridge: map[:bridge],
-          channel: map[:name],
-          text: map[:text]])
+    case map.markup do
+      "text/x-lichat-reaction" ->
+        [target, update_id] = String.split(map[:rich], "  ")
+        Update.make(Update.React, [
+              id: map[:id],
+              clock: map[:clock],
+              from: map[:from],
+              channel: map[:name],
+              target: target,
+              update_id: update_id,
+              emote: map[:text]])
+      _ ->  
+        Update.make(Update.Message, [
+              id: map[:id],
+              clock: map[:clock],
+              from: map[:from],
+              bridge: map[:bridge],
+              channel: map[:name],
+              text: map[:text]])
+    end
   end
 
   defp ensure_time(true), do: nil
