@@ -146,6 +146,7 @@ defmodule Channel do
   def make(registrant) do
     channel = %Channel{
       name: anonymous_name(),
+      registrant: Lichat.server_name(),
       permissions: evaluate_permissions(default_anonymous_channel_permissions(), registrant),
       lifetime: 1}
     case Channels.start_child([channel]) do
