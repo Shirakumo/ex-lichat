@@ -69,6 +69,7 @@ defmodule History do
             text: update.type.text,
             rich: Map.get(update.type, :rich),
             markup: Map.get(update.type, :markup, Map.get(update.type, :link)))
+          _ -> nil
       end
     end
   end
