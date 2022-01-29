@@ -68,7 +68,7 @@ defmodule History do
             channel: update.type.channel,
             text: update.type.text,
             rich: Map.get(update.type, :rich),
-            markup: Map.get(update.type, :markup))
+            markup: Map.get(update.type, :markup, Map.get(update.type, :link)))
       end
     end
   end
@@ -105,25 +105,36 @@ defmodule History do
   defp map_result({:error, _}), do: []
 
   defp map_result(map) do
-    case map.markup do
-      "text/x-lichat-reaction" ->
+    cond do
+      map.markup == "text/x-lichat-reaction" ->
         [target, update_id] = String.split(map[:rich], "  ")
         Update.make(Update.React, [
-              id: map[:id],
-              clock: map[:clock],
-              from: map[:from],
-              channel: map[:name],
+              id: map.id,
+              clock: map.clock,
+              from: map.from,
+              channel: map.name,
               target: target,
               update_id: update_id,
-              emote: map[:text]])
-      _ ->  
+              emote: map.text])
+      Enum.member?(Toolkit.config(:allowed_content_types), map.markup) ->
         Update.make(Update.Message, [
-              id: map[:id],
-              clock: map[:clock],
-              from: map[:from],
-              bridge: map[:bridge],
-              channel: map[:name],
-              text: map[:text]])
+              id: map.id,
+              clock: map.clock,
+              from: map.from,
+              bridge: map.bridge,
+              channel: map.name,
+              text: map.text,
+              link: map.markup])
+      true ->
+          Update.make(Update.Message, [
+              id: map.id,
+              clock: map.clock,
+              from: map.from,
+              bridge: map.bridge,
+              channel: map.name,
+              text: map.text,
+              markup: map.markup,
+              rich: map.rich])
     end
   end
 
