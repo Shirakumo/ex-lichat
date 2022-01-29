@@ -162,7 +162,8 @@ Sec-WebSocket-Protocol: lichat\r
   defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::32, payload :: binary>>) do
     decode_frame({fin, opcode, len, key, payload})
   end
-  defp decode_frame(_) do
+  defp decode_frame(x) do
+    IO.inspect(x, binaries: :as_binaries)
     :error
   end
 
