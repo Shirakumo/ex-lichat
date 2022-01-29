@@ -59,7 +59,7 @@ defmodule History do
             text: update.type.emote,
             rich: update.type.target <> "  " <> to_string(update.type.update_id),
             markup: "text/x-lichat-reaction")
-        _ ->
+        Update.Message ->
           Query.record(
             id: to_string(update.id),
             clock: update.clock,

@@ -222,9 +222,7 @@ defmodule Channel do
   end
   def write(channel, update) do
     GenServer.cast(channel, {:send, update})
-    if update.type.__struct__ == Update.Message do
-      History.record(update)
-    end
+    History.record(update)
     channel
   end
 
