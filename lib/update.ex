@@ -103,7 +103,7 @@ defmodule Update do
 
   def parse(input) when is_binary(input) do
     case WireFormat.update1(input) do
-      {:error, msg, _, _, _, _} -> raise Error.ParseFailure, message: msg
+      {:error, msg, _, _, _, idx} -> raise Error.ParseFailure, message: "Error at position #{idx}: #{msg}, original message: #{input}"
       {:ok, update} -> from_list(update)
     end
   end
