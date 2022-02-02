@@ -53,8 +53,10 @@ defmodule Websocket do
                   0 ->
                     {:more, %{state | accumulator: {rest, payload}}}
                   1 ->
-                    if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
-                    {:ok, payload, %{state | accumulator: {<<>>, <<>>}}}
+                  ## Trigger a new empty packet to ensure we are called again in case
+                  ## we have a complete packet remaining.
+                    if rest != <<>>, do: send self(), {:tcp, state.socket, <<>>}
+                    {:ok, payload, %{state | accumulator: {rest, <<>>}}}
                 end
             end
           :more ->
@@ -162,9 +164,12 @@ Sec-WebSocket-Protocol: lichat\r
   defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::32, payload :: binary>>) do
     decode_frame({fin, opcode, len, key, payload})
   end
-  defp decode_frame(x) do
-    IO.inspect(x, binaries: :as_binaries)
+  defp decode_frame(<<header::16, key::32, payload :: binary>>) do
+    IO.inspect(header, binaries: :as_binaries)
     :error
+  end
+  defp decode_frame(_) do
+    :more
   end
 
   defp unmask(data, nil, _), do: data
