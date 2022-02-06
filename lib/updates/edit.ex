@@ -1,5 +1,5 @@
 use Update
-defupdate(Edit, "EDIT", [:channel, :text]) do
+defupdate(Edit, "EDIT", [:channel, :text, [:rich, optional: true]]) do
   def handle(type, update, state) do
     case Channel.get(type.channel) do
       {:ok, channel} ->
