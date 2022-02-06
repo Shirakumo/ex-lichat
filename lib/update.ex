@@ -215,11 +215,12 @@ end
 defimpl Update.Serialize, for: Update do
   def type_symbol(_), do: %Symbol{name: "UPDATE", package: :lichat}
   def to_list(update) do
-    [ Update.type_symbol(update.type),
-      :id, update.id,
-      :clock, update.clock,
-      :from, update.from
-      | Update.to_list(update.type) ]
+    [ Update.type_symbol(update.type) |
+      Toolkit.prune_plist([
+        :id, update.id,
+        :clock, update.clock,
+        :from, update.from
+        | Update.to_list(update.type) ])]
   end
   def from_list(_, args) do
     %Update{

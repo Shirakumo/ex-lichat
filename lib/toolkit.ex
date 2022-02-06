@@ -132,4 +132,8 @@ defmodule Toolkit do
       [ value | list ]
     end
   end
+
+  def prune_plist([]), do: []
+  def prune_plist([_k, nil | rs]), do: prune_plist(rs)
+  def prune_plist([k, v | rs]), do: [k, v | prune_plist(rs)]
 end
