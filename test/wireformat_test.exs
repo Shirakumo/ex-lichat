@@ -6,9 +6,9 @@ defmodule WireFormatTest do
     assert {:ok, true} = WireFormat.parse1("T")
     assert {:ok, true} = WireFormat.parse1("t")
     assert {:ok, true} = WireFormat.parse1("\\T")
-    assert {:ok, false} = WireFormat.parse1("NIL")
-    assert {:ok, false} = WireFormat.parse1("Nil")
-    assert {:ok, false} = WireFormat.parse1("nil")
+    assert {:ok, nil} = WireFormat.parse1("NIL")
+    assert {:ok, nil} = WireFormat.parse1("Nil")
+    assert {:ok, nil} = WireFormat.parse1("nil")
     assert {:ok, %Symbol{name: "A", package: :keyword}} = WireFormat.parse1(":a")
     assert {:ok, %Symbol{name: "A", package: :lichat}} = WireFormat.parse1("a")
     assert {:ok, %Symbol{name: "A", package: "B"}} = WireFormat.parse1("b:a")
@@ -65,6 +65,8 @@ defmodule WireFormatTest do
     assert {:ok, [%Symbol{name: "FOO", package: :lichat},
                   %Symbol{name: "BAR", package: :keyword},
                   %Symbol{name: "B", package: "A"}]} = WireFormat.update1("(foo :bar a:b)")
+    assert {:ok, [%Symbol{name: "FOO", package: :lichat},
+                  %Symbol{name: "BAR", package: :lichat}, 0]} = WireFormat.update1("(foo bar 0)")
   end
 
   test "printer" do

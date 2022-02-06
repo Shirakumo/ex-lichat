@@ -129,7 +129,7 @@ defmodule WireFormat do
     defparsec :expr, choice([str, list, number, symbol])
 
     object_part =
-      keyword
+      symbol
       |> ignore(repeat(white))
       |> parsec(:expr)
       |> ignore(repeat(white))
