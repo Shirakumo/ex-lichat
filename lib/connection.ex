@@ -10,6 +10,7 @@ defmodule Lichat.Connection do
     counter: 0,
     last_update: 0,
     skew_warned: false,
+    buffer: :queue.new,
     ip: nil,
     ssl: false,
     started_on: Toolkit.universal_time(),
@@ -80,20 +81,26 @@ defmodule Lichat.Connection do
             Process.demonitor(ref)
             %{state | identities: Map.drop(map, name)}
         end
-    after 30_000 ->
+    after 1_000 ->
         case state.state do
           nil ->
             ## Timeout on connect, just close.
             shutdown(state)
-          {:timeout, 4, _} ->
+          {:timeout, 120, _} ->
             Logger.info("Connection #{inspect(self())} timed out, closing")
             close(state)
           {:timeout, n, p} ->
-            write(state, Update.make(Update.Ping, []))
+            if rem(n, 30) == 0 do
+              write(state, Update.make(Update.Ping, []))
+            end
             %{state | state: {:timeout, n+1, p}}
           _ ->
-            write(state, Update.make(Update.Ping, []))
-            %{state | state: {:timeout, 1, state.state}}
+            case :queue.out(state.buffer) do
+              {{:value, update}, buffer} ->
+                handle_update_direct(%{state | buffer: buffer}, update)
+              {:empty, _} ->
+                %{state | state: {:timeout, 1, state.state}}
+            end
         end
     end
     if next_state.state != :closed, do: run(next_state)
@@ -124,19 +131,6 @@ defmodule Lichat.Connection do
     end
   end
 
-  def throttle(state) do
-    {max, period} = Toolkit.config(:max_updates_per_connection)
-    time = Toolkit.time()
-    cond do
-      period <= (time - state.last_update) ->
-        {:ok, %{state | last_update: time, counter: 0}}
-      state.counter < max ->
-        {:ok, %{state | counter: state.counter + 1}}
-      true ->
-        {:error, state}
-    end
-  end
-
   def handle_update_raw(state, data) do
     try do
       handle_update(state, Update.parse(data))
@@ -153,50 +147,69 @@ defmodule Lichat.Connection do
   end
 
   def handle_update(state, update) do
+    {max, period, maxbuffer} = Toolkit.config(:max_updates_per_connection)
+    buflength = :queue.len(state.buffer)
+    time = Toolkit.time()
+    cond do
+      maxbuffer <= buflength ->
+        Logger.info("#{update.from} has been killed due to exceeded buffer queue.")
+        write(state, Update.fail(update, Update.TooManyUpdates))
+        close(state)
+      0 < buflength ->
+        %{state | buffer: :queue.in(update, state.buffer)}
+      period <= (time - state.last_update) ->
+        state = %{state | last_update: time, counter: 0}
+        handle_update_direct(state, update)
+      state.counter < max ->
+        state = %{state | counter: state.counter + 1}
+        handle_update_direct(state, update)
+      true ->
+        Logger.info("#{update.from} has been put on buffer due to excessive messages.")
+        write(state, Update.fail(Update.TooManyUpdates))
+        %{state | buffer: :queue.in(update, state.buffer)}
+    end
+  end
+
+  def handle_update_direct(state, update) do
     try do
-      case throttle(state) do
-        {:ok, state} ->
-          case state.state do
-            nil ->
-              if update.type.__struct__ == Update.Connect do
-                Update.handle(update, state)
-              else
-                write(state, Update.fail(Update.InvalidUpdate))
-                close(state)
-              end
-            :closed ->
-              close(state)
-            _ ->
-              {state, update} = handle_clock(state, update)
-              update = case update.from do
-                         nil -> %{update | from: state.name}
-                         _ -> update
-                       end
-              if update.from != state.name do
-                write(state, Update.fail(update, Update.UsernameMismatch))
-              else
-                case Update.permitted?(update) do
-                  false ->
-                    Logger.info("#{update.from} attempted to #{inspect(update.type.__struct__)} and has been denied.", [intent: :user])
-                    write(state, Update.fail(update, Update.InsufficientPermissions))
-                  :error -> write(state, Update.fail(update, Update.MalformedUpdate))
-                  :no_such_channel -> write(state, Update.fail(update, Update.NoSuchChannel))
-                  :no_such_parent -> write(state, Update.fail(update, Update.NoSuchParentChannel))
-                  :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
-                  true -> Update.handle(update, state)
-                end
-              end
+      case state.state do
+        nil ->
+          if update.type.__struct__ == Update.Connect do
+            Update.handle(update, state)
+          else
+            write(state, Update.fail(Update.InvalidUpdate))
+            close(state)
           end
-        {:error, state} ->
-          write(state, Update.fail(update, Update.TooManyUpdates))
+        :closed ->
+          close(state)
+        _ ->
+          {state, update} = handle_clock(state, update)
+          update = case update.from do
+                     nil -> %{update | from: state.name}
+                     _ -> update
+                   end
+          if update.from != state.name do
+            write(state, Update.fail(update, Update.UsernameMismatch))
+          else
+            case Update.permitted?(update) do
+              false ->
+                Logger.info("#{update.from} attempted to #{inspect(update.type.__struct__)} and has been denied.", [intent: :user])
+                write(state, Update.fail(update, Update.InsufficientPermissions))
+              :error -> write(state, Update.fail(update, Update.MalformedUpdate))
+              :no_such_channel -> write(state, Update.fail(update, Update.NoSuchChannel))
+              :no_such_parent -> write(state, Update.fail(update, Update.NoSuchParentChannel))
+              :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
+              true -> Update.handle(update, state)
+            end
+          end
       end
     rescue
       Protocol.UndefinedError ->
         write(state, Update.fail(Update.MalformedUpdate))
-        if state.state == nil, do: close(state), else: state
+      if state.state == nil, do: close(state), else: state
       e in RuntimeError ->
         write(state, Update.fail(Update.Failure, e.message))
-        if state.state == nil, do: close(state), else: state
+      if state.state == nil, do: close(state), else: state
     end
   end
 

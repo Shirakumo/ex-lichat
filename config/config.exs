@@ -16,8 +16,8 @@ config :lichat,
   ## How many connections a single user can have simultaneously.
   ## Note that this is not counted per-ip, but rather per-account.
   max_connections_per_user: 20,
-  ## Allow 10 updates every 10s.
-  max_updates_per_connection: {10, 10},
+  ## Allow 10 updates every 10s, after which you may buffer up to 20 messages before killing the connection.
+  max_updates_per_connection: {10, 10, 20},
   ## Restrict users to 10 share keys.
   max_shares_per_user: 10,
   ## Around 8 MB max limit.
