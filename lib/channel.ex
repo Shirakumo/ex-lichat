@@ -533,7 +533,7 @@ defmodule Channel do
 
   @impl true
   def handle_cast({:last_read, user, from, id}, channel) do
-    {:noreply, %{channel | last_read: Map.put(channel.last_read, user, {from, id})}}
+    {:noreply, %{channel | last_read: Map.put(channel.last_read, String.downcase(user), {from, id})}}
   end
 
   @impl true
@@ -640,7 +640,7 @@ defmodule Channel do
 
   @impl true
   def handle_call({:last_read, user}, _from, channel) do
-    {:reply, Map.get(channel.last_read, user), channel}
+    {:reply, Map.get(channel.last_read, String.downcase(user)), channel}
   end
 
   @impl true
