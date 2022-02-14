@@ -652,8 +652,7 @@ defmodule Channel do
           handle_cast({:send, Update.make(Update.Leave, [
                               from: name,
                               channel: channel.name
-                            ])},
-            %{channel | last_read: Map.delete(channel.last_read, name)})
+                            ])}, channel)
         else
           {:noreply, channel}
         end
