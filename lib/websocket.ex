@@ -164,7 +164,7 @@ Sec-WebSocket-Protocol: lichat\r
   defp decode_frame(<<fin::1, _::3, opcode::4, 1::1, len::7, key::32, payload :: binary>>) do
     decode_frame({fin, opcode, len, key, payload})
   end
-  defp decode_frame(<<header::16, key::32, payload :: binary>>) do
+  defp decode_frame(<<header::16, _key::32, _payload :: binary>>) do
     IO.inspect(header, binaries: :as_binaries)
     :error
   end
@@ -174,7 +174,7 @@ Sec-WebSocket-Protocol: lichat\r
 
   defp unmask(data, nil, _), do: data
   defp unmask(data, key, 0), do: mask(data, key, <<>>)
-  defp unmask(data, key, len), do: mask(data, key, <<>>)
+  defp unmask(data, key, _len), do: mask(data, key, <<>>)
 
   defp mask(<<>>, _, unmasked), do: unmasked
   defp mask(<<o::32, rest::bits>>, key, acc) do
