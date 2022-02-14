@@ -11,6 +11,8 @@ defmodule UpdateTest do
     == Update.parse("(message :id 0 :clock 0 :from \"\" :channel \"a\" :text \"b\")")
     assert %Update{id: 0, clock: 0, from: nil, type: %Update.Ping{}}
     == Update.parse("(ping :id 0 :clock 0 :foobar 0)")
+    assert %Update{id: 0, clock: 0, from: nil, type: %Update.Ping{}}
+    == Update.parse(Update.print(%Update{id: 0, clock: 0, from: nil, type: %Update.Ping{}}))
   end
 
   test "print" do

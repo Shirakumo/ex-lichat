@@ -66,7 +66,7 @@ defmodule WireFormat do
 
     name_part = choice([
       ignore(string("\\")) |> concat(any),
-      utf8_char([]) |> map(:upcase_char)
+      utf8_char([not: 0, not: ?:, not: ?\s, not: ?", not: ?., not: ?(, not: ?)]) |> map(:upcase_char)
     ])
     name =
       name_part
