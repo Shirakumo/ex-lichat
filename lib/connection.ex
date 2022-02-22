@@ -290,11 +290,6 @@ defmodule Lichat.Connection do
               from: update.from,
               channel: primary
               ]))
-    write(state, Update.make(Update.Message, [
-              from: primary,
-              channel: primary,
-              text: Toolkit.banner()
-              ]))
     Enum.each(User.channels(user), fn {_channel, {_ref, name}} ->
       if name != primary do
         write(state, Update.make(Update.Join, [
@@ -302,6 +297,11 @@ defmodule Lichat.Connection do
                   channel: name ]))
       end
     end)
+    write(state, Update.make(Update.Message, [
+              from: primary,
+              channel: primary,
+              text: Toolkit.banner()
+              ]))
     %{state | state: :connected, user: user, name: update.from}
   end
 
