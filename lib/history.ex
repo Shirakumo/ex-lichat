@@ -60,6 +60,10 @@ defmodule History do
             rich: update.type.target <> "  " <> to_string(update.type.update_id),
             markup: "text/x-lichat-reaction")
         Update.Message ->
+          rich = case Map.get(update.type, :rich) do
+                   nil -> nil
+                   x -> WireFormat.print1(x)
+                 end
           Query.record(
             id: to_string(update.id),
             clock: update.clock,
@@ -67,8 +71,12 @@ defmodule History do
             bridge: Map.get(update.type, :bridge),
             channel: update.type.channel,
             text: update.type.text,
-            rich: Map.get(update.type, :rich),
-            markup: Map.get(update.type, :markup, Map.get(update.type, :link)))
+            rich: rich,
+            markup: if rich == nil do
+              Map.get(update.type, :link)
+            else
+              "text/shirakumo-lichat-markup"
+            end)
           _ -> nil
       end
     end
@@ -117,6 +125,18 @@ defmodule History do
               target: target,
               update_id: update_id,
               emote: map.text])
+      map.markup == "text/shirakumo-lichat-markup" ->
+          Update.make(Update.Message, [
+              id: map.id,
+              clock: map.clock,
+              from: map.from,
+              bridge: map.bridge,
+              channel: map.name,
+              text: map.text,
+              rich: case WireFormat.parse1(map.rich) do
+                      {:ok, x} -> x
+                      _ -> nil
+                    end])
       Enum.member?(Toolkit.config(:allowed_content_types), map.markup) ->
         Update.make(Update.Message, [
               id: map.id,
@@ -133,9 +153,7 @@ defmodule History do
               from: map.from,
               bridge: map.bridge,
               channel: map.name,
-              text: map.text,
-              markup: map.markup,
-              rich: map.rich])
+              text: map.text])
     end
   end
 
