@@ -8,7 +8,7 @@ defmodule Link do
   
   defp file_path(channel, content_type, payload) do
     [ ext | _ ] = MIME.extensions(content_type)
-    "/#{channel}/#{hash(payload)}.#{ext}"
+    "/#{String.downcase(channel)}/#{hash(payload)}.#{ext}"
   end
   
   def save(channel, content_type, payload) do
