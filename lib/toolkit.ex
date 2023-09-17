@@ -50,6 +50,7 @@ defmodule Toolkit do
 
   def valid_channel_name?(name) do
     valid_name?(name)
+    and not String.starts_with?(name, "@")
     and not String.starts_with?(name, "/")
     and not String.ends_with?(name, "/")
     and not String.match?(name, ~r/\/\//)
