@@ -406,6 +406,27 @@ defmodule Channel do
       end
     end)
   end
+
+
+  def remove_admin(channel, user) when is_binary(channel) do
+    {:ok, channel} = Channel.get(channel)
+    remove_admin(channel, user)
+  end
+  def remove_admin(channel, user) do
+    Enum.each(default_channel_permissions(), fn {type, rule} ->
+      if rule == :registrant do
+        deny(channel, user, type)
+      end
+    end)
+  end
+  def remove_admin(user) do
+    channel = primary()
+    Enum.each(default_primary_channel_permissions(), fn{type, rule} ->
+      if rule == :registrant do
+        deny(channel, user, type)
+      end
+    end)
+  end
   
   @impl true
   def init(channel) do
