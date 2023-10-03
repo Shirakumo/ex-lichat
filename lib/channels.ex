@@ -42,6 +42,6 @@ defmodule Channels do
     channels = Channel.list(:pids)
     |> Enum.map(fn {_, channel} -> %{ Channel.data(channel) | users: %{}, expiry: nil} end)
     |> Enum.filter(fn channel -> channel.lifetime == nil or 10 < channel.lifetime end)
-    File.write(Toolkit.config(:channel_file), :erlang.term_to_binary(channels))
+    Toolkit.safe_write(Toolkit.config(:channel_file), :erlang.term_to_binary(channels))
   end
 end

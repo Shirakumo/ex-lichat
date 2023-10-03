@@ -137,4 +137,21 @@ defmodule Toolkit do
   def prune_plist([]), do: []
   def prune_plist([_k, nil | rs]), do: prune_plist(rs)
   def prune_plist([k, v | rs]), do: [k, v | prune_plist(rs)]
+
+  def safe_write(file, content) do
+    tmpname = file <> ".tmp"
+    case File.write(tmpname, content) do
+      :ok ->
+        case File.rename(tmpname, file) do
+          :ok -> :ok
+          {:error, e} ->
+            Logger.critical("Failed to write to #{file}: #{e}")
+            File.rm(tmpname)
+            {:error, e}
+        end
+      {:error, e} ->
+        Logger.critical("Failed to write to #{file}: #{e}")
+        {:error, e}
+    end
+  end
 end
