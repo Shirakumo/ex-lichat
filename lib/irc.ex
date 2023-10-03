@@ -224,7 +224,7 @@ defmodule IRC do
 
   def encode(_state, Update.SetChannelInfo, update) do
     if update.type.key == Symbol.kw("TOPIC") do
-      encode_named(update.from, "TOPIC", [server(), to_channelname(update.type.channel)], update.type.value)
+      encode_named(update.from, "TOPIC", [server(), to_channelname(update.type.channel)], update.type.text)
     else
       :skip
     end
