@@ -77,14 +77,18 @@ defmodule History do
             else
               "text/shirakumo-lichat-markup"
             end)
-          _ -> nil
+          _ -> {:error, :unsupported_update_type}
       end
+    else
+      {:error, :not_connected}
     end
   end
 
   def clear(channel) do
     if Process.whereis(History) != nil do
       Query.clear(channel: channel)
+    else
+      {:error, :not_connected}
     end
   end
 
@@ -92,22 +96,26 @@ defmodule History do
     if Process.whereis(History) != nil do
       map_result(Query.backlog(channel: channel, since: since, limit: limit))
     else
-      []
+      {:error, :not_connected}
     end
   end
   
   def search(channel, query, offset \\ 0) do
-    from = Toolkit.getf(query, :from)
-    text = Toolkit.getf(query, :text)
-    [time_min, time_max] = Toolkit.getf(query, :clock, [true, true])
-    map_result(Query.search(
-          channel: channel,
-          from: ensure_regex(from),
-          time_min: ensure_time(time_min),
-          time_max: ensure_time(time_max),
-          text: ensure_regex(text),
-          limit: limit(),
-          offset: offset))
+    if Process.whereis(History) != nil do
+      from = Toolkit.getf(query, :from)
+      text = Toolkit.getf(query, :text)
+      [time_min, time_max] = Toolkit.getf(query, :clock, [true, true])
+      map_result(Query.search(
+            channel: channel,
+            from: ensure_regex(from),
+            time_min: ensure_time(time_min),
+            time_max: ensure_time(time_max),
+            text: ensure_regex(text),
+            limit: limit(),
+            offset: offset))
+    else
+      {:error, :not_connected}
+    end
   end
 
   defp map_result({:ok, results}), do: Enum.map(results, &map_result/1)
