@@ -700,7 +700,10 @@ defmodule Channel do
       {:error, error} -> Logger.error("Failed to clear channel entry for #{channel.name}: #{error}")
       _ -> nil
     end
-    Link.clear(channel.name)
+    case Link.clear(channel.name) do
+      {:error, error} -> Logger.error("Failed to clear channel links for #{channel.name}: #{error}")
+      _ -> nil
+    end
     {:stop, :normal, channel}
   end
   
