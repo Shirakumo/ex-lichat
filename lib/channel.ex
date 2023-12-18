@@ -180,7 +180,7 @@ defmodule Channel do
         {:ok, pid} = Channels.start_child([channel])
         case History.create(channel.name) do
           {:error, :not_connected} -> nil
-          {:error, error} -> Logger.error("Failed to create channel entry for #{channel.name}: #{error}")
+          {:error, error} -> Logger.error("Failed to create channel entry for #{channel.name}: #{inspect(error)}")
           _ -> nil
         end
         Logger.info("New channel #{channel.name} at #{inspect(pid)}")
@@ -230,7 +230,7 @@ defmodule Channel do
     GenServer.cast(channel, {:send, update})
     case History.record(update) do
       {:error, :not_connected} -> nil
-      {:error, error} -> Logger.error("Failed to record update: #{error}")
+      {:error, error} -> Logger.error("Failed to record update: #{inspect(error)}")
       _ -> nil
     end
     channel
@@ -697,11 +697,11 @@ defmodule Channel do
     Logger.info("Channel #{channel.name} at #{inspect(self())} expired.")
     case History.clear(channel.name) do
       {:error, :not_connected} -> nil
-      {:error, error} -> Logger.error("Failed to clear channel entry for #{channel.name}: #{error}")
+      {:error, error} -> Logger.error("Failed to clear channel entry for #{channel.name}: #{inspect(error)}")
       _ -> nil
     end
     case Link.clear(channel.name) do
-      {:error, error} -> Logger.error("Failed to clear channel links for #{channel.name}: #{error}")
+      {:error, error} -> Logger.error("Failed to clear channel links for #{channel.name}: #{inspect(error)}")
       _ -> nil
     end
     {:stop, :normal, channel}

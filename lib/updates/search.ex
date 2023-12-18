@@ -13,7 +13,7 @@ defupdate(Search, "SEARCH", [:channel, [:results, optional: true], [:offset, opt
               {:error, :not_connected} ->
                 Lichat.Connection.write(state, Update.fail(update, Update.UpdateFailure, [text: "Search unavailable"]))
               {:error, error} ->
-                Logger.error("Failed to search #{type.channel} with #{type.query}: #{error}")
+                Logger.error("Failed to search #{type.channel} with #{type.query}: #{inspect(error)}")
                 Lichat.Connection.write(state, Update.fail(update, Update.UpdateFailure, [text: "Internal error"]))
               updates ->
                 Lichat.Connection.write(state, %{update | type: %{type | results: Enum.map(updates, &Update.to_list/1)}})
