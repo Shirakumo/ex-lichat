@@ -36,7 +36,7 @@ defmodule LocalProfile do
 
   def offload(server) do
     Logger.info("Persisting profiles")
-    Toolkit.safe_write(Toolkit.config(:profile_file), Agent.get(server, & &1))
+    Toolkit.safe_write(Toolkit.config(:profile_file), :erlang.term_to_binary(Agent.get(server, & &1)))
   end
 
   defp update(server, name, fun) do

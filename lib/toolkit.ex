@@ -1,4 +1,6 @@
 defmodule Toolkit do
+  require Logger
+
   def init() do
     :ets.new(__MODULE__, [:public, :named_table])
     :ets.insert(__MODULE__, {:hashids, Hashids.new([salt: config(:salt, ""), min_len: 5])})
@@ -150,7 +152,7 @@ defmodule Toolkit do
             {:error, e}
         end
       {:error, e} ->
-        Logger.critical("Failed to write to #{file}: #{e}")
+        Logger.critical("Failed to write to #{tmpname}: #{e}")
         {:error, e}
     end
   end
