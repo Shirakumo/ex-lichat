@@ -178,7 +178,11 @@ defmodule Channel do
     case Registry.lookup(Channel, String.downcase(channel.name)) do
       [] ->
         {:ok, pid} = Channels.start_child([channel])
-        History.create(channel.name)
+        case History.create(channel.name) do
+          {:error, :not_connected} -> nil
+          {:error, error} -> Logger.error("Failed to create channel entry for #{channel.name}: #{error}")
+          _ -> nil
+        end
         Logger.info("New channel #{channel.name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
@@ -224,7 +228,11 @@ defmodule Channel do
   end
   def write(channel, update) do
     GenServer.cast(channel, {:send, update})
-    History.record(update)
+    case History.record(update) do
+      {:error, :not_connected} -> nil
+      {:error, error} -> Logger.error("Failed to record update: #{error}")
+      _ -> nil
+    end
     channel
   end
 
@@ -687,7 +695,11 @@ defmodule Channel do
   @impl true
   def handle_info(:expire, channel) do
     Logger.info("Channel #{channel.name} at #{inspect(self())} expired.")
-    History.clear(channel.name)
+    case History.clear(channel.name) do
+      {:error, :not_connected} -> nil
+      {:error, error} -> Logger.error("Failed to clear channel entry for #{channel.name}: #{error}")
+      _ -> nil
+    end
     Link.clear(channel.name)
     {:stop, :normal, channel}
   end
