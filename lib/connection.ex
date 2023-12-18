@@ -193,7 +193,10 @@ defmodule Lichat.Connection do
           else
             case Update.permitted?(update) do
               false ->
-                Logger.info("#{update.from} attempted to #{inspect(update.type.__struct__)} and has been denied.", [intent: :user])
+                case Map.get(update.type, :channel) do
+                  nil -> Logger.info("#{update.from} attempted to #{inspect(update.type.__struct__)} and has been denied.", [intent: :user])
+                  channel -> Logger.info("#{update.from} attempted to #{inspect(update.type.__struct__)} in #{channel} and has been denied.", [intent: :user])
+                end
                 write(state, Update.fail(update, Update.InsufficientPermissions))
               :error -> write(state, Update.fail(update, Update.MalformedUpdate))
               :no_such_channel -> write(state, Update.fail(update, Update.NoSuchChannel))
