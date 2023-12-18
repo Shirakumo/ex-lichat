@@ -14,7 +14,7 @@ defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :fil
               {:ok, url} ->
                 Channel.write(channel, %{update | type: %Update.Message{channel: type.channel, text: url, link: type.content_type}})
               {:error, reason} ->
-                Logger.warn("Failed to save data update as link: #{reason}")
+                Logger.warning("Failed to save data update as link: #{reason}")
                 Channel.write(channel, update)
               :disabled ->
                 Channel.write(channel, update)

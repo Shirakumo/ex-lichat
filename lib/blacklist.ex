@@ -1,7 +1,7 @@
 defmodule Blacklist do
   require Logger
   use Agent
-  use Bitwise
+  import Bitwise
   defstruct ips: MapSet.new(), names: MapSet.new()
 
   def start_link(opts) do

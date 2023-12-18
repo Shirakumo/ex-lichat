@@ -16,7 +16,7 @@ defupdate(Emote, "EMOTE", [[:content_type, symbol: "CONTENT-TYPE"], :channel, :p
             :too_large ->
               Lichat.Connection.write(state, Update.fail(update, Update.UpdateTooLong))
             {:error, reason} ->
-              Logger.warn("Failed to save emote update: #{reason}")
+              Logger.warning("Failed to save emote update: #{reason}")
               Lichat.Connection.write(state, Update.fail(update, Update.UpdateFailure))
           end
         else

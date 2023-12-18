@@ -1,5 +1,5 @@
 defmodule Websocket do
-  use Bitwise
+  import Bitwise
   require Logger
   @behaviour Lichat.Connection
 
@@ -23,7 +23,7 @@ defmodule Websocket do
             case decode_headers(headers) do
               {:ok, rest, fields} ->
                 Lichat.Connection.write(state, encode_http_response(fields[:key]))
-                if rest != <<>>, do: send self(), {:tcp, state.socket, rest}
+                if(rest != <<>>, do: send(self(), {:tcp, state.socket, rest}))
                 {:more, %{state | accumulator: {<<>>, <<>>}, state: nil, ip: Map.get(fields, :ip, state.ip)}}
               {:more, _} ->
                 {:more, %{state | accumulator: {data, <<>>}}}
@@ -55,7 +55,7 @@ defmodule Websocket do
                   1 ->
                   ## Trigger a new empty packet to ensure we are called again in case
                   ## we have a complete packet remaining.
-                    if rest != <<>>, do: send self(), {:tcp, state.socket, <<>>}
+                    if(rest != <<>>, do: send(self(), {:tcp, state.socket, <<>>}))
                     {:ok, payload, %{state | accumulator: {rest, <<>>}}}
                 end
             end
