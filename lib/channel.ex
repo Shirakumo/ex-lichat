@@ -230,6 +230,7 @@ defmodule Channel do
     GenServer.cast(channel, {:send, update})
     case History.record(update) do
       {:error, :not_connected} -> nil
+      {:error, :unsupported_update_type} -> nil
       {:error, error} -> Logger.error("Failed to record update: #{inspect(error)}")
       _ -> nil
     end
