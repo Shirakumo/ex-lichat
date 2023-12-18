@@ -1,4 +1,5 @@
 use Update
+require Logger
 defupdate(Search, "SEARCH", [:channel, [:results, optional: true], [:offset, optional: true], [:query, optional: true]]) do
   def handle(type, update, state) do
     case Channel.get(type.channel) do
