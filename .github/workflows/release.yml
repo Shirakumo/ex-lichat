@@ -20,7 +20,7 @@ jobs:
           path: |
             deps
             _build/prod/lib/
-          key: ${{ runner.os }}-25-1.15.0-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-otp25-ex1.15.0-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-otp25-ex1.15.0-${{ hashFiles('**/mix.lock') }}
             ${{ runner.os }}-otp25-ex1.15.0-
