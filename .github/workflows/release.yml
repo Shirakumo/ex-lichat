@@ -1,0 +1,50 @@
+name: Build Release
+on: [create, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15.0'
+          otp-version: '25'
+      - name: Restore dependencies cache
+        uses: actions/cache@v2
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+      - name: Install dependencies
+        run: mix deps.get
+      - name: Compile
+        run: MIX_ENV=prod mix compile
+      - name: Compile release
+        run: MIX_ENV=prod mix distillery.release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: lichat
+          path: _build/prod/rel/lichat/releases/*/lichat.tar.gz
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: rel-${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: _build/prod/rel/lichat/releases/*/lichat.tar.gz
+          asset_name: lichat.tar.gz
+          asset_content_type: application/gzip
