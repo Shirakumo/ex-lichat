@@ -31,6 +31,17 @@ environment :prod do
   set include_src: false
   set cookie: :"tXtrk%2U/Zwm(A;Hu%*n{!pa;E00lDf3PW7BMp.Ugk2<_N3o>L(Yg{wKo[ezTECK"
   set vm_args: "rel/vm.args"
+  set config_providers: [
+    {Distillery.Releases.Config.Providers.Elixir, ["${RELEASE_ROOT_DIR}/config/secret.exs"]}
+  ]
+  set overlays: [
+    {:mkdir, "config"},
+    {:copy, "rel/config/secret.exs", "config/secret.exs"},
+    {:copy, "config/blacklist.txt", "config/blacklist.txt"},
+    {:copy, "config/banner.txt", "config/banner.txt"},
+    {:copy, "config/cert.pem", "config/cert.pem"},
+    {:copy, "config/key.pem", "config/key.pem"},
+  ]
 end
 
 # You may define one or more releases in this file.
