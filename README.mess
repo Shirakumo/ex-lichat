@@ -1,5 +1,30 @@
 # ExLichat
-This is an implementation of a "Lichat"(https://shirakumo.github.io/lichat) server.
+This is an implementation of a "Lichat"(https://shirakumo.github.io/lichat) server in Elixir, providing a very robust, scalable, and extensible chat server implementation.
+
+## Running a Development Server
+Setting up a Lichat server is very simple.
+
+::
+pacman -S elixir
+git clone https://github.com/shirakumo/ex-lichat
+cd ex-lichat
+mix deps.get
+iex -S mix
+::
+
+You can configure and override settings from the ''config''(config/config.exs) in the ``config/secret.exs`` file.
+
+## Running a Production Server
+Download the latest ''release''(https://github.com/shirakumo/ex-lichat/releases/latest) tarball and extract it to somewhere on your server. We highly recommend creating a custom user for it as well. You can then use the ``bin/lichat help`` command to get information about what you can do to the server.
+
+If you use Systemd, the distribution also includes a ``lichat.service`` file for you. It assumes that you created a user called ``lichat`` and that you extracted the release package to their home directory at ``/home/lichat``. You can then install the service to systemd with
+
+::
+ln -s /home/lichat/lichat.service /etc/systemd/system/
+systemctl --now enable lichat
+::
+
+You'll likely also want to change the SSL keys in ``config/`` and configure the server with the ``config/secret.exs`` file. You can reference the ''``config/config.exs``''(link config/config.exs) file for the available options.
 
 ## Supported Extensions
 In addition to the core protocol, ExLichat also supports many of the specified extensions:
@@ -24,38 +49,3 @@ In addition to the core protocol, ExLichat also supports many of the specified e
 - shirakumo-server-management
 - shirakumo-typing
 - shirakumo-user-info
-
-; TODO: implement markup, shared-identity extensions
-; TODO: Keep server stats of when IPs connect and with which names, etc.
-; TODO: Expose these stats through an extra interface.
-; TODO: Track and limit connections per IP
-; TODO: send disconnect when connection process terminates from application shutdown
-; TODO: be stricter about image payloads in emotes and especially channel/user-info:
-;   - Automatically resize icons to fit a predetermined max-size
-;   - Reject payload if the payload is not an actual png/jpeg/gif file
-
-## How To
-Setting up a Lichat server is very simple.
-
-::
-pacman -S elixir
-git clone https://github.com/shirakumo/ex-lichat
-cd ex-lichat
-touch config/secret.exs
-mix deps.get
-iex -S mix
-::
-
-You can configure and override settings from the "config"(config/config.exs) in the config/secret.exs file.
-
-## Running on a Server
-Download the latest ''release''(https://github.com/shirakumo/ex-lichat/releases/latest) tarball and extract it to somewhere on your server. We highly recommend creating a custom user for it as well. You can then use the ``bin/lichat help`` command to get information about what you can do to the server.
-
-If you use Systemd, the distribution also includes a ``lichat.service`` file for you. It assumes that you created a user called ``lichat`` and that you extracted the release package to their home directory at ``/home/lichat``. You can then install the service to systemd with
-
-::
-ln -s /home/lichat/lichat.service /etc/systemd/system/
-systemctl --now enable lichat
-::
-
-You'll likely also want to change the SSL keys in ``config/`` and configure the server with the ``config/secret.exs`` file. You can reference the ''``config/config.exs``''(link config/config.exs) file for the available options.
