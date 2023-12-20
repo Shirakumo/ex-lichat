@@ -22,7 +22,7 @@ defmodule Lichat.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :crypto, :eldap, :ssl],
+      extra_applications: [:logger, :crypto, :eldap, :ssl, :sasl],
       env: [profile_lifetime: 60*60*24*365,
             acceptors: 2,
             port: 1111,
@@ -40,7 +40,12 @@ defmodule Lichat.MixProject do
       {:ex_unicode, "~> 1.0"},
       {:postgrex, "~> 0.15.8"},
       {:yesql, "~> 1.0.1"},
-      {:observer_cli, "~> 1.7"}
+      {:observer_cli, "~> 1.7"},
+      {:distillery,
+       git: "https://github.com/bors-ng/distillery.git",
+       override: true,
+       commit: "6a221e8",
+       runtime: false}
     ]
   end
 end
