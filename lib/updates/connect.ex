@@ -9,12 +9,13 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
           else update end
         cond do
           not Toolkit.valid_name?(update.from) ->
-            Lichat.Connection.write(connection, Update.fail(update, Update.BadName))
+            Lichat.Connection.write(connection, Update.fail(update, Update.BadName,
+                [text: "The username #{update.from} is invalid"]))
             Lichat.Connection.close(connection)
           not Lichat.compatible?(type.version) ->
-            Lichat.Connection.write(connection, Update.fail(update, Update.IncompatibleVersion, [
-                      compatible_versions: Lichat.compatible_versions()
-                    ]))
+            Lichat.Connection.write(connection, Update.fail(update, Update.IncompatibleVersion,
+                  [compatible_versions: Lichat.compatible_versions(),
+                   text: "The protocol version #{type.version} is not compatible. Compatible versions are: #{Enum.join(Lichat.compatible_versions(), ", ")}"]))
             Lichat.Connection.close(connection)
           Blacklist.has?(update.from) ->
             Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: name on blacklist")
@@ -25,17 +26,20 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
               :not_registered ->
                 cond do
                   is_binary(type.password) ->
-                    Lichat.Connection.write(connection, Update.fail(update, Update.NoSuchProfile))
+                    Lichat.Connection.write(connection, Update.fail(update, Update.NoSuchProfile,
+                        [text: "No such profile with name #{update.from}"]))
                     Lichat.Connection.close(connection)
                   User.get(update.from) != :error ->
-                    Lichat.Connection.write(connection, Update.fail(update, Update.UsernameTaken))
+                    Lichat.Connection.write(connection, Update.fail(update, Update.UsernameTaken,
+                        [text: "The username is already taken: #{update.from}"]))
                     Lichat.Connection.close(connection)
                   true ->
                     Lichat.Connection.establish(connection, update)
                 end
               :bad_password ->
                 Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: invalid password")
-                Lichat.Connection.write(connection, Update.fail(update, Update.InvalidPassword))
+                Lichat.Connection.write(connection, Update.fail(update, Update.InvalidPassword,
+                      [text: "The given password is invalid for #{update.from}"]))
                 Lichat.Connection.close(connection)
               :ok ->
                 case User.get(update.from) do

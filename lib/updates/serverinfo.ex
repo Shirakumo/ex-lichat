@@ -19,7 +19,7 @@ defupdate(ServerInfo, "SERVER-INFO", [:target, [:attributes, optional: true], [:
         Lichat.Connection.write(state, Update.make(Update.ServerInfo, [
                   id: update.id, target: type.target, attributes: attributes, connections: connections]))
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchUser))
+        Failure.no_such_user(state, update)
     end
     state
   end

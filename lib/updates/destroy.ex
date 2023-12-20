@@ -8,7 +8,7 @@ defupdate(Destroy, "DESTROY", [:channel]) do
         Channel.destroy(channel)
         Lichat.Connection.write(state, update)
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Failure.no_such_channel(state, update)
     end
     state
   end

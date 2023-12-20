@@ -6,16 +6,18 @@ defupdate(SetChannelInfo, "SET-CHANNEL-INFO", [:channel, :key, :text]) do
       {:ok, channel} ->
         cond do
           not Channel.valid_info?(type.key) ->
-            Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: type.key]))
+            Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo,
+                  [key: type.key, text: "The channel info key #{type.key} is not valid"]))
           not Channel.valid_info?(type.key, type.text) ->
-            Lichat.Connection.write(state, Update.fail(update, Update.MalformedChannelInfo))
+            Lichat.Connection.write(state, Update.fail(update, Update.MalformedChannelInfo,
+                  [text: "The channel info value is malformed for the key #{type.key}"]))
           true ->
             Logger.info("#{update.from} set #{inspect(type.key)} in #{type.channel}", [intent: :user])
             Channel.info(channel, type.key, type.text)
             Channel.write(channel, update)
         end
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Failure.no_such_channel(state, update)
     end
     state
   end

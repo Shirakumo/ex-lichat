@@ -200,6 +200,21 @@ defmodule Channel do
     Toolkit.valid_info?(symbol, value)
   end
 
+  def check_access(connection, update) do
+    case Channel.get(update.type.channel) do
+      {:ok, channel} ->
+        if User.in_channel?(connection.user, channel) do
+          {:ok, channel}
+        else
+          Failure.not_in_channel(connection, update)
+          {:error, :not_in_channel}
+        end
+      :error ->
+        Failure.no_such_channel(connection, update)
+        {:error, :no_such_channel}
+    end
+  end
+
   def list(:names), do: Registry.select(__MODULE__, [{{:"$1", :_, :_}, [], [{{:"$1", :"$1"}}]}])
   def list(:pids), do: Registry.select(__MODULE__, [{{:"$1", :"$2", :_}, [], [{{:"$1", :"$2"}}]}])
 

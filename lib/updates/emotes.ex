@@ -17,10 +17,12 @@ defupdate(Emotes, "EMOTES", [[:names, optional: true], [:channel, optional: true
           end)
           Lichat.Connection.write(state, %{update | type: %{type | names: Enum.map(emotes, &Map.get(&1, :name))}})
         else
-          Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
+            Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel,
+                  [text: "#{update.from} is not in #{channelname}"]))
         end
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel,
+              [text: "No such channel with the name #{channelname}"]))
     end
     state
   end

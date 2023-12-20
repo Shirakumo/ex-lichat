@@ -9,16 +9,18 @@ defupdate(Create, "CREATE", [[:channel, required: false]]) do
           :ok ->
             User.write(state.user, Update.reply(update, Update.Join, [channel: name]))
           :too_many_channels ->
-            Lichat.Connection.write(state, Update.fail(update, Update.TooManyChannels))
+            Failure.too_many_channels(state, update)
         end
       not Toolkit.valid_channel_name?(type.channel) ->
-        Lichat.Connection.write(state, Update.fail(update, Update.BadName))
+        Lichat.Connection.write(state, Update.fail(update, Update.BadName,
+              [text: "The channel name is illegal: #{type.channel}"]))
       Toolkit.config!(:max_channels_per_user) <= map_size(User.channels(state.user)) ->
-        Lichat.Connection.write(state, Update.fail(update, Update.TooManyChannels))
+        Failure.too_many_channels(state, update)
       true ->
         case Channel.ensure_channel(type.channel, update.from) do
           {:old, _} ->
-            Lichat.Connection.write(state, Update.fail(update, Update.ChannelnameTaken))
+            Lichat.Connection.write(state, Update.fail(update, Update.ChannelnameTaken,
+                  [text: "The channel name is already taken: #{type.channel}"]))
           {:new, channel} ->
             Logger.info("#{update.from} created #{type.channel}", [intent: :user])
             case User.join(state.user, channel) do

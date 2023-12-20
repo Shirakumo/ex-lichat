@@ -8,7 +8,7 @@ defupdate(Grant, "GRANT", [:channel, :update, :target]) do
         Channel.grant(channel, type.target, type.update)
         Lichat.Connection.write(state, update)
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Failure.no_such_channel(state, update)
     end
     state
   end

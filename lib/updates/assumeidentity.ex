@@ -16,7 +16,7 @@ defupdate(AssumeIdentity, "ASSUME-IDENTITY", [:target, :key]) do
         :no_such_key ->
           Lichat.Connection.write(state, Update.fail(update, Update.IdentityAlreadyUsed))
         :no_such_user ->
-          Lichat.Connection.write(state, Update.fail(update, Update.NoSuchUser))
+          Failure.no_such_user(state, update)
       end
     end
   end

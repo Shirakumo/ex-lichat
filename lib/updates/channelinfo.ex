@@ -10,7 +10,8 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
               if Channel.valid_info?(k) do
                 true
               else
-                Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo, [key: k]))
+                Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannelInfo,
+                      [key: k, text: "The channel info key #{k} is unset on #{type.channel}"]))
                 false
               end
             end)
@@ -25,7 +26,7 @@ defupdate(ChannelInfo, "CHANNEL-INFO", [:channel, :keys]) do
                   ]))
         end)
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Failure.no_such_channel(state, update)
     end
     state
   end

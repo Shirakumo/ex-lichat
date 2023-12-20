@@ -8,7 +8,7 @@ defupdate(Pause, "PAUSE", [:channel, :by]) do
         Channel.pause(channel, type.by)
         Channel.write(channel, update)
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Failure.no_such_channel(state, update)
     end
     state
   end

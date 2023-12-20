@@ -13,10 +13,11 @@ defupdate(LastRead, "LAST-READ", [:channel, [:target, optional: true], [:update_
               Lichat.Connection.write(state, %{update | type: %{type | target: target, update_id: id}})
             end
           :not_registered ->
-            Lichat.Connection.write(state, Update.fail(update, Update.NoSuchProfile))
+            Lichat.Connection.write(state, Update.fail(update, Update.NoSuchProfile,
+                [text: "No such profile with the name #{update.from}"]))
         end
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
+        Failure.no_such_channel(state, update)
     end
     state
   end

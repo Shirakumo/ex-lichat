@@ -8,7 +8,7 @@ defupdate(Kill, "KILL", [:target]) do
         User.destroy(user)
         Lichat.Connection.write(state, update)
       :error ->
-        Lichat.Connection.write(state, Update.fail(update, Update.NoSuchUser))
+        Failure.no_such_user(state, update)
     end
     state
   end

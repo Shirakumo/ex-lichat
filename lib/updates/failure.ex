@@ -1,7 +1,48 @@
 use Update
 
-defupdate Failure, "FAILURE",
-  [[:text, default: "An unknown failure occurred."]]
+defmodule Failure do
+  Module.register_attribute(Failure, :is_update?, persist: true)
+  @is_update? true
+  @behaviour Update
+  @impl Update
+  def type_symbol, do: %Symbol{name: "FAILURE", package: :lichat}
+  
+  defstruct text: "An unknown failure occurred."
+  
+  defimpl Update.Serialize, for: Failure do
+    def to_list(type), do: [Symbol.kw("TEXT"), type.text]
+    def from_list(_, args) do
+      Update.from_list(%Update{},
+        [ :type, struct(Failure, [text: Toolkit.getf(args, "TEXT")]) | args ])
+    end
+  end
+  
+  defimpl Update.Execute, for: Failure do
+    def handle(_type, _update, _state) do
+    end
+  end
+  
+  def not_in_channel(connection, update) do
+    Lichat.Connection.write(connection, Update.fail(update, Update.NotInChannel,
+          [text: "#{update.from} is not in #{update.type.channel}"]))
+  end
+  
+  def no_such_channel(connection, update) do
+    Lichat.Connection.write(connection, Update.fail(update, Update.NoSuchChannel,
+          [text: "No such channel with the name #{update.type.channel}"]))
+  end
+
+  def no_such_user(connection, update) do
+    Lichat.Connection.write(connection, Update.fail(update, Update.NoSuchUser,
+          [text: "No such user with the name #{update.type.target}"]))
+  end
+
+  def too_many_channels(connection, update) do
+    Lichat.Connection.write(connection, Update.fail(update, Update.TooManyChannels,
+            [text: "#{update.from} is already in too many channels (max: #{Toolkit.config!(:max_channels_per_user)})"]))
+  end
+end
+
 defupdate MalformedUpdate, "MALFORMED-UPDATE",
   [[:text, default: "The update was malformed and could not be parsed."]]
 defupdate UpdateTooLong, "UPDATE-TOO-LONG",
@@ -97,3 +138,4 @@ defupdate MalformedUserInfo, "MALFORMED-USER-INFO",
    [:text, default: "The specified info was not of the correct format for the key."]]
 defupdate IdentityAlreadyUsed, "IDENTITY-ALREADY-USED",
   [[:text, default: "The specified identity key is invalid or has been used already."]]
+

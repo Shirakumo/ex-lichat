@@ -165,7 +165,8 @@ defmodule Lichat.Connection do
         handle_update_direct(state, update)
       true ->
         Logger.info("#{update.from} has been put on buffer due to excessive messages.")
-        write(state, Update.fail(Update.TooManyUpdates))
+        write(state, Update.fail(Update.TooManyUpdates,
+              "You have been sending too many messages and have been put on a queue."))
         %{state | buffer: :queue.in(update, state.buffer)}
     end
   end
@@ -177,7 +178,8 @@ defmodule Lichat.Connection do
           if update.type.__struct__ == Update.Connect do
             Update.handle(update, state)
           else
-            write(state, Update.fail(Update.InvalidUpdate))
+              write(state, Update.fail(Update.InvalidUpdate,
+                    "The first object must be a CONNECT update."))
             close(state)
           end
         :closed ->
@@ -189,7 +191,8 @@ defmodule Lichat.Connection do
                      _ -> update
                    end
           if update.from != state.name do
-            write(state, Update.fail(update, Update.UsernameMismatch))
+            write(state, Update.fail(update, Update.UsernameMismatch,
+                  "The FROM field did not match your username: #{update.from} /= #{state.name}"))
           else
             case Update.permitted?(update) do
               false ->
@@ -198,12 +201,18 @@ defmodule Lichat.Connection do
                             channel -> "#{update.from} does not have the permission to #{inspect(update.type.__struct__)} in #{channel}"
                           end
                 Logger.info(message, [intent: :user])
-                write(state, Update.fail(update, Update.InsufficientPermissions, [text: message]))
-              :error -> write(state, Update.fail(update, Update.MalformedUpdate))
-              :no_such_channel -> write(state, Update.fail(update, Update.NoSuchChannel))
-              :no_such_parent -> write(state, Update.fail(update, Update.NoSuchParentChannel))
-              :timeout -> write(state, Update.fail(update, Update.TooManyUpdates))
-              true -> Update.handle(update, state)
+                write(state, Update.fail(update, Update.InsufficientPermissions, message))
+              :error ->
+                write(state, Update.fail(update, Update.MalformedUpdate))
+              :no_such_channel ->
+                Failure.no_such_channel(state, update)
+              :no_such_parent ->
+                write(state, Update.fail(update, Update.NoSuchParentChannel,
+                      "The parent channel for #{update.type.channel} does not exist."))
+              :timeout ->
+                write(state, Update.fail(update, Update.TooManyUpdates))
+              true ->
+                Update.handle(update, state)
             end
           end
       end

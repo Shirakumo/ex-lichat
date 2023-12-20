@@ -5,25 +5,21 @@ defupdate(Data, "DATA", [:channel, [:content_type, symbol: "CONTENT-TYPE"], :fil
     if is_list(Toolkit.config(:allowed_content_types))
     and not Enum.member?(Toolkit.config(:allowed_content_types), type.content_type) do
       Lichat.Connection.write(state, Update.fail(update, Update.BadContentType, [
-                allowed_content_types: Toolkit.config(:allowed_content_types) ]))
+                allowed_content_types: Toolkit.config(:allowed_content_types),
+                text: "The content-type #{type.content_type} is not allowed. Allowed are: #{Enum.join(Toolkit.config(:allowed_content_types), ", ")}"]))
     else
-      case Channel.get(type.channel) do
+      case Channel.check_access(state, update) do
+        {:error, _} -> nil
         {:ok, channel} ->
-          if User.in_channel?(state.user, channel) do
-            case Link.save(type.channel, type.content_type, type.payload) do
-              {:ok, url} ->
-                Channel.write(channel, %{update | type: %Update.Message{channel: type.channel, text: url, link: type.content_type}})
-              {:error, reason} ->
-                Logger.warning("Failed to save data update as link: #{reason}")
-                Channel.write(channel, update)
-              :disabled ->
-                Channel.write(channel, update)
-            end
-          else
-            Lichat.Connection.write(state, Update.fail(update, Update.NotInChannel))
+          case Link.save(type.channel, type.content_type, type.payload) do
+            {:ok, url} ->
+              Channel.write(channel, %{update | type: %Update.Message{channel: type.channel, text: url, link: type.content_type}})
+            {:error, reason} ->
+              Logger.warning("Failed to save data update as link: #{reason}")
+              Channel.write(channel, update)
+            :disabled ->
+              Channel.write(channel, update)
           end
-        :error ->
-          Lichat.Connection.write(state, Update.fail(update, Update.NoSuchChannel))
       end
     end
     state
