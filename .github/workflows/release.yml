@@ -15,19 +15,25 @@ jobs:
           elixir-version: '1.15.0'
           otp-version: '25'
       - name: Restore dependencies cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
+          path: |
+            deps
+            _build/prod/lib/
+          key: ${{ runner.os }}-25-1.15.0-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-otp25-ex1.15.0-${{ hashFiles('**/mix.lock') }}
+            ${{ runner.os }}-otp25-ex1.15.0-
+            ${{ runner.os }}-otp25-
+            ${{ runner.os }}-
       - name: Install dependencies
         run: mix deps.get
       - name: Compile
         run: MIX_ENV=prod mix compile
       - name: Compile release
-        run:
+        run: |
           MIX_ENV=prod mix distillery.release
-          cp _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat.tar.gz
+          cp -v _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat.tar.gz
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
