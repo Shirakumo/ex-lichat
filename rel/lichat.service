@@ -1,0 +1,19 @@
+[Unit]
+Description=Lichat Chat Server
+After=network.target
+
+[Service]
+Type=simple
+User=lichat
+Group=lichat
+WorkingDirectory=/home/lichat
+ExecStart=/home/lichat/bin/lichat foreground
+ExecReload=/home/lichat/bin/lichat rpc "Lichat.reload()"
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=5
+SyslogIdentifier=lichat
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

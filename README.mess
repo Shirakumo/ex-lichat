@@ -48,25 +48,14 @@ iex -S mix
 
 You can configure and override settings from the "config"(config/config.exs) in the config/secret.exs file.
 
-## Sample Systemd Service
+## Running on a Server
+Download the latest ''release''(https://github.com/shirakumo/ex-lichat/releases/latest) tarball and extract it to somewhere on your server. We highly recommend creating a custom user for it as well. You can then use the ``bin/lichat help`` command to get information about what you can do to the server.
+
+If you use Systemd, the distribution also includes a ``lichat.service`` file for you. It assumes that you created a user called ``lichat`` and that you extracted the release package to their home directory at ``/home/lichat``. You can then install the service to systemd with
 
 ::
-[Unit]
-Description=Lichat Chat Server
-
-[Service]
-Type=simple
-User=lichat
-ExecStart=$LICHAT_SOURCE/_build/dev/rel/lichat/bin/lichat start
-ExecStop=$LICHAT_SOURCE/_build/dev/rel/lichat/bin/lichat stop
-ExecReload=$LICHAT_SOURCE/_build/dev/rel/lichat/bin/lichat rpc "Lichat.reload()"
-WorkingDirectory=$LICHAT_SOURCE
-Restart=on-failure
-RestartSec=30
-TimeoutStopSec=5
-
-[Install]
-WantedBy=multi-user.target
+ln -s /home/lichat/lichat.service /etc/systemd/system/
+systemctl --now enable lichat
 ::
 
-Just replace ``$LICHAT_SOURCE`` with the path to your root source directory, assuming you built a binary from there with ``mix release``.
+You'll likely also want to change the SSL keys in ``config/`` and configure the server with the ``config/secret.exs`` file. You can reference the ''``config/config.exs``''(link config/config.exs) file for the available options.

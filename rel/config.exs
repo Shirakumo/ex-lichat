@@ -37,6 +37,7 @@ environment :prod do
   set overlays: [
     {:mkdir, "config"},
     {:copy, "rel/config/secret.exs", "config/secret.exs"},
+    {:copy, "rel/lichat.service", "lichat.service"},
     {:copy, "config/blacklist.txt", "config/blacklist.txt"},
     {:copy, "config/banner.txt", "config/banner.txt"},
     {:copy, "config/cert.pem", "config/cert.pem"},
