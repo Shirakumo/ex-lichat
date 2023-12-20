@@ -3,7 +3,10 @@ on: [create, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
@@ -21,40 +24,25 @@ jobs:
             deps
             _build/prod/lib/
           key: ${{ runner.os }}-otp25-ex1.15.0-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-otp25-ex1.15.0-${{ hashFiles('**/mix.lock') }}
-            ${{ runner.os }}-otp25-ex1.15.0-
-            ${{ runner.os }}-otp25-
-            ${{ runner.os }}-
+          restore-keys: ${{ runner.os }}-otp25-ex1.15.0-${{ hashFiles('**/mix.lock') }}
       - name: Install dependencies
         run: mix deps.get
-      - name: Compile
-        run: MIX_ENV=prod mix compile
       - name: Compile release
         run: |
-          MIX_ENV=prod mix distillery.release
-          cp -v _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat.tar.gz
+          mix compile
+          mix distillery.release
+          cp _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat-${{ runner.os }}.tar.gz
+        env:
+          MIX_ENV: prod
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
-          name: lichat
-          path: lichat.tar.gz
+          name: lichat-${{ runner.os }}
+          path: lichat-${{ runner.os }}.tar.gz
       - name: Create release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: rel-${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - name: Upload release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: lichat.tar.gz
-          asset_name: lichat.tar.gz
-          asset_content_type: application/gzip
+          allowUpdates: true
+          name: Release ${{ github.ref }}
+          artifacts: lichat-${{ runner.os }}.tar.gz
