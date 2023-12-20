@@ -81,4 +81,5 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:intent]
 
-import_config "secret.exs"
+if File.exists?("config/secret.exs"),
+  do: Config.import_config("secret.exs")
