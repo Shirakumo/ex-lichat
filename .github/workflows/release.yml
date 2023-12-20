@@ -25,12 +25,14 @@ jobs:
       - name: Compile
         run: MIX_ENV=prod mix compile
       - name: Compile release
-        run: MIX_ENV=prod mix distillery.release
+        run:
+          MIX_ENV=prod mix distillery.release
+          cp _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat.tar.gz
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
           name: lichat
-          path: _build/prod/rel/lichat/releases/*/lichat.tar.gz
+          path: lichat.tar.gz
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
@@ -47,6 +49,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: _build/prod/rel/lichat/releases/*/lichat.tar.gz
+          asset_path: lichat.tar.gz
           asset_name: lichat.tar.gz
           asset_content_type: application/gzip
