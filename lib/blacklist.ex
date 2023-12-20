@@ -50,8 +50,24 @@ defmodule Blacklist do
   def offload() do
     Logger.info("Persisting blacklist")
     blacklist = Agent.get(__MODULE__, & &1)
-    blacklist.ips
-    |> Stream.map(fn {ip, mask} -> "ip: #{:inet_parse.ntoa(ip)} #{:inet_parse.ntoa(mask)}" end)
+    ["# Format:
+#  (ip: IP MASK?) | (name: NAME)
+# The IP and MASK should be IPv4 or IPv6 addresses.
+# 
+# Block the address 1.2.3.4:
+#   ip: 1.2.3.4
+# or:
+#   ip: 1.2.3.4 0.0.0.0
+#
+# Block all addresses at 1.1.1.X:
+#   ip: 1.1.1.1 0.0.0.255
+# or:
+#   ip: ::ffff:1.1.1.1 ::00ff
+#
+# Block user called \"someone new\"
+#   name: someone new
+"]
+    |> Stream.concat(Stream.map(blacklist.ips, fn {ip, mask} -> "ip: #{:inet_parse.ntoa(ip)} #{:inet_parse.ntoa(mask)}" end))
     |> Stream.concat(Stream.map(blacklist.names, fn name -> "name: #{name}" end))
     |> Stream.into(File.stream!(Toolkit.config(:blacklist_file)))
     |> Stream.run()
