@@ -71,6 +71,13 @@ defmodule Lichat.Connection do
         state
       :close ->
         close(state)
+      :check_blacklist ->
+        if Blacklist.has?(state.ip) do
+          Logger.info("Killing connection from #{Toolkit.ip(state.ip)}: on blacklist")
+          close(state)
+        else
+          state
+        end
       {:get_data, from} ->
         send from, {:data, state}
         state

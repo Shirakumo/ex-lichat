@@ -113,6 +113,14 @@ defmodule User do
     GenServer.cast(user, :revoke_all_shares)
   end
 
+  def broadcast(user, data) do
+    GenServer.cast(user, {:broadcast, data})
+  end
+
+  def broadcast(data) do
+    Enum.each(list(:pids), fn user -> broadcast(user, data) end)
+  end
+
   def assume(user, key) when is_binary(user) do
     case User.get(user) do
       {:ok, user} -> assume(user, key)
@@ -269,6 +277,12 @@ defmodule User do
     if not MapSet.member?(user.blocked, String.downcase(update.from)) do
       Enum.each(Map.keys(user.connections), fn connection -> send(connection, {:send, update}) end)
     end
+    {:noreply, user}
+  end
+
+  @impl true
+  def handle_cast({:broadcast, data}, user) do
+    Enum.each(Map.keys(user.connections), fn connection -> send(connection, data) end)
     {:noreply, user}
   end
 
