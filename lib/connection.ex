@@ -295,6 +295,7 @@ defmodule Lichat.Connection do
     state = %{state | extensions: (if update.type.extensions == nil, do: [], else: MapSet.new(update.type.extensions))}
     primary = Lichat.server_name()
     user = User.connect(User.ensure_user(update.from), self())
+    History.ip_log(state, Update.Connect)
     write(state, Update.reply(update, Update.Connect, [
               from: update.from,
               version: Lichat.version(),
@@ -319,6 +320,7 @@ defmodule Lichat.Connection do
   end
 
   def shutdown(state) do
+    History.ip_log(state, Update.Disconnect)
     if state.ssl do
       :ssl.shutdown(state.socket, :write)
     else

@@ -3,6 +3,7 @@ defupdate(Block, "BLOCK", [:target]) do
   def handle(type, update, state) do
     case Profile.lookup(update.from) do
       :ok ->
+        History.ip_log(state, Update.Block, type.target)
         User.block(update.from, type.target)
         Profile.block(update.from, type.target)
         Lichat.Connection.write(state, update)

@@ -8,6 +8,7 @@ defupdate(Ban, "BAN", [:target]) do
       :error -> nil
     end
     Logger.info("#{update.from} banned #{type.target}", [intent: :admin])
+    History.ip_log(state, Update.Ban, type.target)
     Blacklist.add_name(type.target)
     Lichat.Connection.write(state, update)
   end

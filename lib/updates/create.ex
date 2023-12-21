@@ -22,6 +22,7 @@ defupdate(Create, "CREATE", [[:channel, required: false]]) do
             Lichat.Connection.write(state, Update.fail(update, Update.ChannelnameTaken,
                   [text: "The channel name is already taken: #{type.channel}"]))
           {:new, channel} ->
+            History.ip_log(state, Update.Create)
             Logger.info("#{update.from} created #{type.channel}", [intent: :user])
             case User.join(state.user, channel) do
               :ok ->

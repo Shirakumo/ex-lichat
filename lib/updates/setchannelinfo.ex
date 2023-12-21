@@ -14,6 +14,7 @@ defupdate(SetChannelInfo, "SET-CHANNEL-INFO", [:channel, :key, :text]) do
           true ->
             Logger.info("#{update.from} set #{inspect(type.key)} in #{type.channel}", [intent: :user])
             try do
+              History.ip_log(state, Update.SetChannelInfo, type.channel)
               Channel.info(channel, type.key, type.text)
               Channel.write(channel, update)
             rescue

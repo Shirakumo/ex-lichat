@@ -3,6 +3,7 @@ defupdate(ShareIdentity, "SHARE-IDENTITY", [[:key, optional: true]]) do
   def handle(_type, update, state) do
     case User.create_share(state.user) do
       {:ok, key} ->
+        History.ip_log(state, Update.ShareIdentity)
         Lichat.Connection.write(state, Update.reply(update, Update.ShareIdentity, [
                   key: key]))
       :too_many_shares ->

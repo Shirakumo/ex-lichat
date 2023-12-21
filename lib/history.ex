@@ -6,11 +6,14 @@ defmodule History do
     use Yesql, driver: Postgrex, conn: History
     Yesql.defquery("lib/sql/create_history_channels_table.sql")
     Yesql.defquery("lib/sql/create_history_table.sql")
+    Yesql.defquery("lib/sql/create_iplog_table.sql")
     Yesql.defquery("lib/sql/create.sql")
     Yesql.defquery("lib/sql/search.sql")
     Yesql.defquery("lib/sql/backlog.sql")
     Yesql.defquery("lib/sql/record.sql")
     Yesql.defquery("lib/sql/clear.sql")
+    Yesql.defquery("lib/sql/ip_log.sql")
+    Yesql.defquery("lib/sql/ip_search.sql")
   end
   
   def limit, do: 100
@@ -24,6 +27,7 @@ defmodule History do
           Logger.info("Connected to PSQL server at #{Keyword.get(opts, :hostname)}")
           Query.create_history_channels_table([])
           Query.create_history_table([])
+          Query.create_iplog_table([])
           {:ok, pid}
         x -> x
       end
@@ -40,9 +44,39 @@ defmodule History do
     }
   end
 
+  def ip_log(connection, action, target \\ nil) do
+    if Process.whereis(History) != nil do
+      Query.ip_log(
+        ip: Toolkit.ip(connection.ip),
+        clock: Toolkit.universal_time(),
+        action: action_id(action),
+        from: connection.name,
+        target: target)
+    else
+      {:error, :not_connected}
+    end
+  end
+
+  def ip_search(ip \\ nil, opts \\ [])
+  
+  def ip_search(ip, opts) do
+    if Process.whereis(History) != nil do
+      map_ip_result(Query.ip_search(
+            ip: if(is_nil(ip), do: nil, else: Toolkit.ip(ip)),
+            from: Keyword.get(opts, :from, nil),
+            action: Keyword.get(opts, :action, Update),
+            limit: Keyword.get(opts, :count, 100),
+            offset: Keyword.get(opts, :start, 0)))
+    else
+      {:error, :not_connected}
+    end
+  end
+
   def create(channel) do
     if Process.whereis(History) != nil do
       Query.create(channel: channel)
+    else
+      {:error, :not_connected}
     end
   end
 
@@ -119,7 +153,7 @@ defmodule History do
   end
 
   defp map_result({:ok, results}), do: Enum.map(results, &map_result/1)
-  defp map_result({:error, _}), do: []
+  defp map_result({:error, e}), do: {:error, e}
 
   defp map_result(map) do
     cond do
@@ -192,5 +226,45 @@ defmodule History do
       {c, repchar(p, c) ++ acc}
     end)
     to_string(Enum.reverse(acc))
+  end
+
+  defp action_id_map, do: [
+    Update.Connect,
+    Update.Disconnect,
+    Update.TooManyConnections,
+    Update.InvalidPassword,
+    Update.UsernameTaken,
+    Update.NoSuchProfile,
+    Update.Register,
+    Update.Create,
+    Update.Ban,
+    Update.Unban,
+    Update.IpBan,
+    Update.IpUnban,
+    Update.Block,
+    Update.Unblock,
+    Update.Destroy,
+    Update.Kill,
+    Update.Permissions,
+    Update.SetChannelInfo,
+    Update.SetUserInfo,
+    Update.AssumeIdentity,
+    Update.ShareIdentity,
+    Update.Bridge ]
+  defp action_id(action), do: Enum.find_index(action_id_map(), fn x -> x == action end)
+  defp id_action(id), do: Enum.at(action_id_map(), id)
+
+  defp map_ip_result({:ok, results}), do: Enum.map(results, &map_ip_result/1)
+  defp map_ip_result({:error, e}), do: {:error, e}
+  
+  defp map_ip_result(map) do
+    [
+      id: map.id,
+      ip: map.ip,
+      clock: map.clock,
+      action: id_action(map.action),
+      from: map.from,
+      target: map.target
+    ]
   end
 end

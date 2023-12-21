@@ -22,6 +22,7 @@ defmodule Update.Bridge do
     def handle(type, update, state) do
       case Channel.get(type.channel) do
         {:ok, _channel} ->
+          History.ip_log(state, Update.Bridge, type.channel)
           Lichat.Connection.write(state, update)
         :error ->
           Failure.no_such_channel(state, update)

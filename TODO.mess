@@ -1,6 +1,5 @@
 - Implement markup
 - Test shared-identity
-- Keep server stats of when IPs connect and with which names, etc.
 - Expose these stats through an extra interface.
 - Track and limit connections per IP
 - Send disconnect when connection process terminates from application shutdown
