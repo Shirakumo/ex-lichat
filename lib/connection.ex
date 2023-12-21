@@ -256,10 +256,11 @@ defmodule Lichat.Connection do
       case module.init(data, state) do
         {:ok, state} ->
           if Blacklist.has?(state.ip) do
-            Logger.info("Connection from #{:inet_parse.ntoa(addr)} denied: on blacklist")
+            Logger.info("Connection from #{Toolkit.ip(state.ip)} denied: on blacklist")
+            History.ip_log(state, Update.TooManyConnections)
             %{state | type: nil}
           else
-            Logger.info("New #{inspect(module)} connection from #{:inet_parse.ntoa(state.ip)} at #{inspect(self())}")
+            Logger.info("New #{inspect(module)} connection from #{Toolkit.ip(state.ip)} at #{inspect(self())}")
             state
           end
         :error -> nil
