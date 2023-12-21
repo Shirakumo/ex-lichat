@@ -80,9 +80,26 @@ defmodule Toolkit do
           [ type, b64 ] ->
             Enum.member?(Toolkit.config!(:allowed_icon_content_types), type)
             and String.length(b64) <= Toolkit.config!(:max_icon_size)
+            and Base.decode64(b64) !== :error
           _ -> false
         end
       true -> true
+    end
+  end
+
+  def optimize_info_value(symbol, value) do
+    cond do
+      symbol == %Symbol{package: "KEYWORD", name: "ICON"} ->
+        case Toolkit.config!(:max_icon_dimensions) do
+          [ w, h ] ->
+            [ _type, b64 ] = String.split(value)
+            Image.from_binary!(Base.decode64!(b64))
+            |> Image.thumbnail!("#{w}x#{h}", resize: :down, fit: :contain)
+            |> Image.write!(:memory, strip_metadata: true, suffix: ".png")
+            |> Base.encode64()
+          nil -> value
+        end
+      true -> value
     end
   end
 

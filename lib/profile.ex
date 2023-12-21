@@ -55,6 +55,7 @@ defmodule Profile do
   end
 
   def info(name, key, value) do
+    value = Toolkit.optimize_info_value(key, value)
     name = String.downcase(name)
     LocalProfile.ensure(LocalProfile, name)
     LocalProfile.info(LocalProfile, name, key, value)

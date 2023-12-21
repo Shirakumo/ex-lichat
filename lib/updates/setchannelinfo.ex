@@ -13,8 +13,15 @@ defupdate(SetChannelInfo, "SET-CHANNEL-INFO", [:channel, :key, :text]) do
                   [text: "The channel info value is malformed for the key #{type.key}"]))
           true ->
             Logger.info("#{update.from} set #{inspect(type.key)} in #{type.channel}", [intent: :user])
-            Channel.info(channel, type.key, type.text)
-            Channel.write(channel, update)
+            try do
+              Channel.info(channel, type.key, type.text)
+              Channel.write(channel, update)
+            rescue
+              e in RuntimeError ->
+                Logger.error("Failed to set channel key #{type.key}: #{inspect(e)}")
+                Lichat.Connection.write(state, Update.fail(update, Update.MalformedChannelInfo,
+                      [text: "The channel info value is malformed for the key #{type.key}"]))
+            end
         end
       :error ->
         Failure.no_such_channel(state, update)

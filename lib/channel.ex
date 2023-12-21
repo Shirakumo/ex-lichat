@@ -403,6 +403,7 @@ defmodule Channel do
   end
 
   def info(channel, key, value) do
+    value = Toolkit.optimize_info_value(key, value)
     GenServer.cast(channel, {:info, key, value})
     channel
   end

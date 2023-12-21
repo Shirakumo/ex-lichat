@@ -13,6 +13,10 @@ config :lichat,
   allowed_emote_content_types: ["image/png", "image/gif"],
   ## The maximum size of an icon (~1MB)
   max_icon_size: 1048576,
+  ## The maximum pixel dimension of an icon [w, h]
+  ## If you set this to nil, icons may be of arbitrary size, otherwise they will be resized to fit.
+  ## You must have libvips installed for the resizing to work
+  max_icon_dimensions: [128, 128],
   ## How many connections a single user can have simultaneously.
   ## Note that this is not counted per-ip, but rather per-account.
   max_connections_per_user: 20,

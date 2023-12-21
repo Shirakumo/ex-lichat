@@ -4,6 +4,3 @@
 - Expose these stats through an extra interface.
 - Track and limit connections per IP
 - Send disconnect when connection process terminates from application shutdown
-- Be stricter about image payloads in emotes and especially channel/user-info:
-  - Automatically resize icons to fit a predetermined max-size
-  - Reject payload if the payload is not an actual png/jpeg/gif file

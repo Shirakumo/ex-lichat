@@ -40,6 +40,7 @@ defmodule Lichat.MixProject do
       {:ex_unicode, "~> 1.0"},
       {:postgrex, "~> 0.15.8"},
       {:yesql, "~> 1.0.1"},
+      {:image, "~> 0.37"},
       {:observer_cli, "~> 1.7"},
       {:distillery,
        git: "https://github.com/bors-ng/distillery.git",

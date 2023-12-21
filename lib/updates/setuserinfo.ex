@@ -13,8 +13,15 @@ defupdate(SetUserInfo, "SET-USER-INFO", [:key, :text]) do
                   [text: "The user info value is malformed for the key #{type.key}"]))
           true ->
             Logger.info("#{update.from} set #{inspect(type.key)} for themselves.", [intent: :user])
-            Profile.info(update.from, type.key, type.text)
-            Lichat.Connection.write(state, update)
+            try do
+              Profile.info(update.from, type.key, type.text)
+              Lichat.Connection.write(state, update)
+            rescue
+              e in RuntimeError ->
+                Logger.error("Failed to set user key #{type.key}: #{inspect(e)}")
+                Lichat.Connection.write(state, Update.fail(update, Update.MalformedChannelInfo,
+                      [text: "The channel info value is malformed for the key #{type.key}"]))
+            end
         end
       :not_registered ->
         Lichat.Connection.write(state, Update.fail(update, Update.NoSuchProfile,
