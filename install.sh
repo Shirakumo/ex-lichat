@@ -49,7 +49,8 @@ function on-remote() {
 function extract-remote() {
     local archive="$1"
     local target="${2:-$INSTALL_DIR}"
-    on-remote tar -xvzf "$archive" -C "$target"
+    local component="${3:-}"
+    on-remote tar -xvzf "$archive" "$component" -C "$target"
     on-remote chown -R lichat:lichat "$target"
 }
 
@@ -71,9 +72,8 @@ function setup-systemd() {
 function install-upgrade() {
     local archive="${1:-$(latest-archive)}"
     local version="$(archive-version "$archive")"
-    local remote="$INSTALL_DIR/releases/$version/lichat.tar.gz"
-    on-remote mkdir -p "$INSTALL_DIR/releases/$version"
-    upload-archive "$archive" "$remote"
+    local remote="$(upload-archive "$archive")"
+    extract-remote "$remote" "$INSTALL_DIR" "releases/$version"
     on-remote "$INSTALL_DIR/bin/lichat" upgrade "$version"
 }
 
