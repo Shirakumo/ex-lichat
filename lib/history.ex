@@ -72,7 +72,7 @@ defmodule History do
       map_ip_result(Query.ip_search(
             ip: if(is_nil(ip), do: nil, else: Toolkit.ip(ip)),
             from: Keyword.get(opts, :from, nil),
-            action: Keyword.get(opts, :action, Update),
+            action: action_id(Keyword.get(opts, :action, Update)),
             limit: Keyword.get(opts, :count, 100),
             offset: Keyword.get(opts, :start, 0)))
     else
