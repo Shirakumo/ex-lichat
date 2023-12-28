@@ -10,4 +10,4 @@ CREATE TABLE IF NOT EXISTS "lichat-ip-log"(
 CREATE INDEX IF NOT EXISTS "lichat-ip-log.ip" ON "lichat-ip-log" USING hash("ip");
 CREATE INDEX IF NOT EXISTS "lichat-ip-log.from" ON "lichat-ip-log" USING hash("from");
 CREATE INDEX IF NOT EXISTS "lichat-ip-log.action" ON "lichat-ip-log" USING hash("action");
-CREATE INDEX IF NOT EXISTS "lichat-ip-log.clock" ON "lichat-ip-log" USING btree("clock") DESC;
+CREATE INDEX IF NOT EXISTS "lichat-ip-log.clock" ON "lichat-ip-log" USING btree("clock" DESC);
