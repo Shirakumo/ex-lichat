@@ -78,12 +78,12 @@ function install-upgrade() {
 }
 
 function build-fresh() {
-    MIX_ENV=prod mix distillery.release &> /dev/null
+    MIX_ENV=prod mix distillery.release > /dev/null
     echo "$(latest-archive)"
 }
 
 function build-upgrade() {
-    MIX_ENV=prod mix distillery.release --upgrade &> /dev/null
+    MIX_ENV=prod mix distillery.release --upgrade > /dev/null
     echo "$(latest-archive)"
 }
 
@@ -120,6 +120,7 @@ function main() {
         upgrade) upgrade ;;
         build) build-fresh ;;
         service) on-remote systemctl "$2" lichat.service ;;
+        list) echo "$(latest-archive)" ;;
         help)
             cat << EOF
 Lichat Elixir Installation Manager
@@ -135,6 +136,7 @@ Available commands:
   build       --- Build a fresh install package
   service     --- Manage the systemd service
     action      --- The action to perform
+  list        --- List available archives
   help        --- Show this help
 
 Relies on the following envvars:
