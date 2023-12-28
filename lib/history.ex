@@ -25,10 +25,10 @@ defmodule History do
       case Postgrex.start_link([{:name, History} | opts]) do
         {:ok, pid} ->
           Logger.info("Connected to PSQL server at #{Keyword.get(opts, :hostname)}")
-          Query.create_history_channels_table([])
-          Query.create_history_table([])
-          Query.create_iplog_table([])
-          {:ok, pid}
+          case create_tables() do
+            :ok -> {:ok, pid}
+            x -> x
+          end
         x -> x
       end
     end
@@ -42,6 +42,14 @@ defmodule History do
       restart: :permanent,
       shutdown: 500
     }
+  end
+
+  def create_tables() do
+    with {:ok, _} <- Query.create_history_channels_table([]),
+         {:ok, _} <- Query.create_history_table([]),
+         {:ok, _} <- Query.create_iplog_table([]) do
+      :ok
+    end
   end
 
   def ip_log(connection, action, target \\ nil) do
