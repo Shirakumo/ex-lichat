@@ -4,4 +4,4 @@ CREATE TABLE IF NOT EXISTS "lichat-history-channels"(
        PRIMARY KEY("id"),
        UNIQUE("name")
 );
-CREATE INDEX IF NOT EXISTS "lichat-history-channels.name" ON "lichat-history-channels" USING hash("name");
+
