@@ -6,6 +6,7 @@ defmodule Toolkit do
     :ets.insert(__MODULE__, {:hashids, Hashids.new([salt: config(:salt, ""), min_len: 5])})
   end
 
+  def ip(nil), do: "nil"
   def ip(ip) when is_binary(ip), do: ip
   def ip(ip) when is_list(ip), do: List.to_string(ip)
   def ip(ip) when is_tuple(ip) do
