@@ -100,7 +100,12 @@ defmodule IRC do
 
   def decode(state, "PRIVMSG", [chan | args]) do
     text = strip_prefix(Enum.join(args, " "))
-    reply_update(state, Update.Message, [channel: from_channelname(chan), text: text])
+    case text do
+      <<1, "ACTION", payload::binary>> ->
+        reply_update(state, Update.Message, [channel: from_channelname(chan), text: "*"<>state.name<>" "<>String.slice(payload,1..-1//1)<>"*"])
+      payload ->
+        reply_update(state, Update.Message, [channel: from_channelname(chan), text: payload])
+    end
   end
 
   def decode(state, "TOPIC", [chan | _]) do
