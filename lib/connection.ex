@@ -25,11 +25,13 @@ defmodule Lichat.Connection do
   def start_link([socket: socket, ssl: ssl]) do
     opts = [active: true, nodelay: true]
     if ssl do
+      {:ok, {addr, _port}} = :ssl.sockname(socket)
       :ssl.setopts(socket, opts)
-      Task.start_link(__MODULE__, :handshake_ssl, [%Lichat.Connection{socket: socket, ssl: true}])
+      Task.start_link(__MODULE__, :handshake_ssl, [%Lichat.Connection{socket: socket, ip: addr, ssl: true}])
     else
+      {:ok, {addr, _port}} = :inet.peername(socket)
       :inet.setopts(socket, opts)
-      Task.start_link(__MODULE__, :run, [%Lichat.Connection{socket: socket, ssl: false}])
+      Task.start_link(__MODULE__, :run, [%Lichat.Connection{socket: socket, ip: addr, ssl: false}])
     end
   end
 
@@ -265,8 +267,6 @@ defmodule Lichat.Connection do
   end
 
   def init(data, state) do
-    {:ok, {addr, _port}} = :inet.peername(state.socket)
-    state = %{state | ip: addr}
     Enum.find_value([Websocket, IRC, RawTCP], state, fn module ->
       case module.init(data, state) do
         {:ok, state} ->
