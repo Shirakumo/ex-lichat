@@ -71,7 +71,7 @@ defmodule Lichat do
   end
 
   def reload() do
-    ## TODO: ssl reload
+    :ssl.clear_pem_cache()
     Profile.reload()
     Blacklist.reload()
   end
