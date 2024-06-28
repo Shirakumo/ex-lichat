@@ -99,7 +99,7 @@ defmodule Lichat.Connection do
     after 1_000 ->
         case state.state do
           nil ->
-            ## Timeout on connect, just close.
+            Logger.info("Connection #{inspect(self())} timed out before connecting, closing")
             shutdown(state)
           {:timeout, 120, _} ->
             Logger.info("Connection #{inspect(self())} timed out, closing")
