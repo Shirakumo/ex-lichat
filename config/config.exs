@@ -38,6 +38,8 @@ config :lichat,
   channel_lifetime: 5184000,
   ## Around 1 year of lifetime before expiry.
   profile_lifetime: 31536000,
+  ## The timeout to wait for SSL handshakes to be established
+  ssl_timeout: 500,
   ## Listen on all local IPs.
   listen: [[ip: {0,0,0,0}, port: 1111, acceptors: 2],
            [ip: {0,0,0,0}, port: 1112, acceptors: 2, ssl: [certfile: "config/cert.pem", keyfile: "config/key.pem"]]],

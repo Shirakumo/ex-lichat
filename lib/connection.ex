@@ -34,9 +34,9 @@ defmodule Lichat.Connection do
   end
 
   def handshake_ssl(state) do
-    case :ssl.handshake(state.socket, 1000) do
+    case :ssl.handshake(state.socket, Toolkit.config(:ssl_timeout)) do
       {:ok, socket, _} ->
-        case :ssl.handshake_continue(socket, [], 1000) do
+        case :ssl.handshake_continue(socket, [], Toolkit.config(:ssl_timeout)) do
           {:ok, socket} -> run(%{state | socket: socket})
           {:error, reason} ->
             Logger.info("SSL handshake failed for #{inspect(self())}: #{inspect(reason)}")
@@ -94,6 +94,8 @@ defmodule Lichat.Connection do
             Process.demonitor(ref)
             %{state | identities: Map.drop(map, name)}
         end
+      x ->
+        Logger.warning("Unhandled #{inspect(self())} #{inspect(state.user)}: #{inspect(x)}")
     after 1_000 ->
         case state.state do
           nil ->
