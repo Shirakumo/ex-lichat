@@ -39,13 +39,13 @@ defmodule Lichat.Connection do
         case :ssl.handshake_continue(socket, [], Toolkit.config(:ssl_timeout)) do
           {:ok, socket} -> run(%{state | socket: socket})
           {:error, reason} ->
-            Logger.info("SSL handshake failed for #{inspect(self())}: #{inspect(reason)}")
+            Logger.info("#{describe(state)} SSL handshake failed: #{inspect(reason)}")
             :ssl.close(state.socket)
         end
       {:ok, socket} ->
         run(%{state | socket: socket})
       {:error, reason} ->
-        Logger.info("SSL handshake failed for #{inspect(self())}: #{inspect(reason)}")
+        Logger.info("#{describe(state)} SSL handshake failed: #{inspect(reason)}")
         :ssl.close(state.socket)
     end
   end
@@ -57,17 +57,17 @@ defmodule Lichat.Connection do
         handle_data(socket, data, state)
       {:tcp, socket, data} ->
         handle_data(socket, data, state)
-      {:ssl_closed, _} ->
-        Logger.info("SSL closed #{inspect(self())} #{inspect(state.user)}")
+      {:ssl_closed, reason} ->
+        Logger.info("#{describe(state)} SSL closed: #{inspect(reason)}")
         %{state | state: :closed}
-      {:tcp_closed, _} ->
-        Logger.info("TCP closed #{inspect(self())} #{inspect(state.user)}")
+      {:tcp_closed, reason} ->
+        Logger.info("#{describe(state)} TCP closed: #{inspect(reason)}")
         %{state | state: :closed}
-      {:ssl_error, _, _} ->
-        Logger.info("SSL error #{inspect(self())} #{inspect(state.user)}")
+      {:ssl_error, reason, _} ->
+        Logger.info("#{describe(state)} SSL error: #{inspect(reason)}")
         %{state | state: :closed}
-      {:tcp_error, _} ->
-        Logger.info("TCP error #{inspect(self())} #{inspect(state.user)}")
+      {:tcp_error, reason} ->
+        Logger.info("#{describe(state)} TCP error: #{inspect(reason)}")
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
@@ -79,7 +79,7 @@ defmodule Lichat.Connection do
         close(state)
       :check_blacklist ->
         if Blacklist.has?(state.ip) do
-          Logger.info("Killing connection from #{Toolkit.ip(state.ip)}: on blacklist")
+          Logger.info("#{describe(state)} Killing connection: on blacklist")
           close(state)
         else
           state
@@ -95,14 +95,14 @@ defmodule Lichat.Connection do
             %{state | identities: Map.drop(map, name)}
         end
       x ->
-        Logger.warning("Unhandled #{inspect(self())} #{inspect(state.user)}: #{inspect(x)}")
+        Logger.warning("#{describe(state)} Weird message: #{inspect(x)}")
     after 1_000 ->
         case state.state do
           nil ->
-            Logger.info("Connection #{inspect(self())} timed out before connecting, closing")
+            Logger.info("#{describe(state)} Timed out before connecting, closing")
             shutdown(state)
           {:timeout, 120, _} ->
-            Logger.info("Connection #{inspect(self())} timed out, closing")
+            Logger.info("#{describe(state)} Timed out, closing")
             close(state)
           {:timeout, n, p} ->
             if rem(n, 30) == 0 do
@@ -139,7 +139,7 @@ defmodule Lichat.Connection do
       {:more, state} ->
         state
       {:error, reason, state} ->
-        Logger.info("Handler failure: #{reason}")
+        Logger.info("#{describe(state)} Handler failure: #{reason}")
         shutdown(state)
       :shutdown ->
         shutdown(state)
@@ -167,7 +167,7 @@ defmodule Lichat.Connection do
     time = Toolkit.time()
     cond do
       maxbuffer <= buflength ->
-        Logger.info("#{update.from} has been killed due to exceeded buffer queue.")
+        Logger.info("#{describe(state)} has been killed due to exceeded buffer queue.")
         write(state, Update.fail(update, Update.TooManyUpdates))
         close(state)
       0 < buflength ->
@@ -179,7 +179,7 @@ defmodule Lichat.Connection do
         state = %{state | counter: state.counter + 1}
         handle_update_direct(state, update)
       true ->
-        Logger.info("#{update.from} has been put on buffer due to excessive messages.")
+        Logger.info("#{describe(state)} has been put on buffer due to excessive messages.")
         write(state, Update.fail(Update.TooManyUpdates,
               "You have been sending too many messages and have been put on a queue."))
         %{state | buffer: :queue.in(update, state.buffer)}
@@ -271,11 +271,11 @@ defmodule Lichat.Connection do
       case module.init(data, state) do
         {:ok, state} ->
           if Blacklist.has?(state.ip) do
-            Logger.info("Connection from #{Toolkit.ip(state.ip)} denied: on blacklist")
+            Logger.info("#{describe(state)} Connection from denied: on blacklist")
             History.ip_log(state, Update.TooManyConnections)
             %{state | type: nil}
           else
-            Logger.info("New #{inspect(module)} connection from #{Toolkit.ip(state.ip)} at #{inspect(self())}")
+            Logger.info("#{describe(state)} New #{inspect(module)} connection")
             state
           end
         :error -> nil
@@ -373,5 +373,9 @@ defmodule Lichat.Connection do
 
   def remove_identity(connection) do
     send connection, {:DOWN, nil, :process, self(), :identity_removed}
+  end
+
+  def describe(state) do
+    "#{inspect(self())}:#{Toolkit.ip(state.ip)}:#{state.name}"
   end
 end
