@@ -206,7 +206,7 @@ end
 
 defimpl Update.Serialize, for: Any do
   def type_symbol(type) do
-    Symbol.li(String.upcase(String.slice(Atom.to_string(type.__struct__), 15..-1)))
+    Symbol.li(String.upcase(String.slice(Atom.to_string(type.__struct__), 15..-1//1)))
   end
   def to_list(_), do: []
   def from_list(type, args), do: Update.from_list(%Update{}, [ :type, type | args ])

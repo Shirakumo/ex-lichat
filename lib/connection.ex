@@ -34,13 +34,19 @@ defmodule Lichat.Connection do
   end
 
   def handshake_ssl(state) do
-    case :ssl.handshake(state.socket) do
+    case :ssl.handshake(state.socket, 1000) do
       {:ok, socket, _} ->
-        run(%{state | socket: socket})
+        case :ssl.handshake_continue(socket, [], 1000) do
+          {:ok, socket} -> run(%{state | socket: socket})
+          {:error, reason} ->
+            Logger.info("SSL handshake failed for #{inspect(self())}: #{inspect(reason)}")
+            :ssl.close(state.socket)
+        end
       {:ok, socket} ->
         run(%{state | socket: socket})
       {:error, reason} ->
         Logger.info("SSL handshake failed for #{inspect(self())}: #{inspect(reason)}")
+        :ssl.close(state.socket)
     end
   end
   
