@@ -5,7 +5,7 @@ defmodule IRC do
   @impl Lichat.Connection
   def init(data, state) do
     cond do
-      String.starts_with?(data, ["CAP ", "PASS ", "NICK ", "USER "]) ->
+      Regex.match?(~r/^(CAP|PASS|NICK|USER) /i, data) ->
         {:ok, %{state | type: __MODULE__, accumulator: <<>>, state: {:init, nil, nil, nil}}}
       true ->
         :error
@@ -59,13 +59,13 @@ defmodule IRC do
     case state.state do
       {:init, pass, nick, user} ->
         cond do
-          String.starts_with?(data, "CAP ") ->
+          Regex.match?(~r/^CAP /i, data) ->
             next.(pass, nick, user)
-          String.starts_with?(data, "PASS ") ->
+          Regex.match?(~r/^PASS /i, data) ->
             next.(String.slice(data, 5..256), nick, user)
-          String.starts_with?(data, "NICK ") ->
+          Regex.match?(~r/^NICK /i, data) ->
             next.(pass, from_source(String.slice(data, 5..256)), user)
-          String.starts_with?(data, "USER ") ->
+          Regex.match?(~r/^USER /i, data) ->
             next.(pass, nick, true)
           true ->
             {:error, "Unknown command in init, got #{data}", state}
@@ -77,7 +77,7 @@ defmodule IRC do
 
   def decode(state, string) do
     [command | args] = String.split(string, " ")
-    decode(state, command, args)
+    decode(state, String.upcase(command), args)
   end
 
   def decode(state, "JOIN", [chan | _]) do
