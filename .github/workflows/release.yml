@@ -35,14 +35,15 @@ jobs:
         env:
           MIX_ENV: prod
       - name: Upload artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: lichat-${{ runner.os }}
           path: lichat-${{ runner.os }}.tar.gz
       - name: Create release
         id: create_release
         uses: ncipollo/release-action@v1
+        continue-on-error: true
         with:
           allowUpdates: true
-          name: Release ${{ github.ref }}
+          name: Release ${{ github.ref_name }}
           artifacts: lichat-${{ runner.os }}.tar.gz
