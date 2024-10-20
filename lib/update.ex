@@ -77,7 +77,7 @@ defmodule Update do
   ## On the other hand, protocols also can't have other
   ## functions defined in them to use as helpers, so I guess
   ## now we can put parse/print in here again.
-  def type_symbol(update), do: update.__struct__.type_symbol
+  def type_symbol(update), do: update.__struct__.type_symbol()
   def from_list(input, args), do: Serialize.from_list(input, args)
   def to_list(update), do: Serialize.to_list(update)
 

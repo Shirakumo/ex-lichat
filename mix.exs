@@ -13,7 +13,10 @@ defmodule Lichat.MixProject do
           include_executables_for: [:unix],
           steps: [:assemble, :tar],
           applications: [lichat: :permanent],
-          version: {:from_app, :lichat}
+          version: {:from_app, :lichat},
+          config_providers: [
+            {Config.Reader, {:system, "RELEASE_ROOT", "/config/secret.exs"}}
+          ]
         ]
       ]
     ]

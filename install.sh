@@ -55,6 +55,7 @@ function remote-version() {
 function upload-archive() {
     local archive="$1"
     local target="${2:-/tmp/$(basename "$archive")}"
+    log "Uploading to $REMOTE:$target"
     scp "$archive" "$REMOTE:$target" 1>&2 \
         || eexit "Failed to copy $archive to remote: $REMOTE:$target"
     echo "$target"
@@ -64,12 +65,14 @@ function extract-remote() {
     local archive="$1"
     local target="${2:-$INSTALL_DIR}"
     local component="${3:-}"
-    on-remote tar -xvzf "$archive" "$component" -C "$target"
+    log "Extracting to $REMOTE:$target"
+    on-remote tar -xzf "$archive" "$component" -C "$target"
     on-remote chown -R "$REMOTE_USER:$REMOTE_USER" "$target"
 }
 
 function install-fresh() {
     local archive="${1:-$(latest-archive)}"
+    log "Installing $archive"
     local remote="$(upload-archive "$archive")"
     extract-remote "$remote"
     on-remote mkdir -p "$INSTALL_DIR/releases"
@@ -99,6 +102,7 @@ function install-upgrade() {
 }
 
 function build() {
+    log "Building current release"
     MIX_ENV=$VARIANT mix release --overwrite --quiet &>> /dev/null
     echo "$(latest-archive)"
 }
@@ -106,7 +110,7 @@ function build() {
 function install() {
     local archive="$(build)"
     install-fresh "$archive"
-    setup-systemd
+#    setup-systemd
 }
 
 function upgrade() {

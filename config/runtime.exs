@@ -86,6 +86,3 @@ config :lichat,
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:intent]
-
-if File.exists?("config/secret.exs"),
-  do: Config.import_config("secret.exs")
