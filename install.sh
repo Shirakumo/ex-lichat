@@ -2,19 +2,34 @@
 set -uo pipefail
 
 REMOTE="${REMOTE:-lichat@localhost}"
-INSTALL_DIR="${INSTALL_DIR:-/home/lichat/}"
+REMOTE_USER="${REMOTE_USER:-lichat}"
+INSTALL_DIR="${INSTALL_DIR:-/home/$REMOTE_USER/}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+VARIANT="${VARIANT:-prod}"
 
 source "$SCRIPT_DIR/.install"
 
 function eexit() {
-    echo "$(tput setaf 1) ! Error: $(tput sgr 0)" "$@"
+    echo -e "\n$(tput setaf 1) ! Error: $(tput sgr 0)" "$@" "\n"
     exit 2
+}
+
+function log() {
+    >&2 echo -e "$(tput setaf 1) ! $(tput sgr 0)" "$@"
+}
+
+function on-remote() {
+    ssh -o LogLevel=QUIET "$REMOTE" -t "$@" \
+        || eexit "Failed to execute on remote: $@"
+}
+
+function remote-rpc() {
+    on-remote sudo -H -u "$REMOTE_USER" "$INSTALL_DIR/bin/lichat" rpc "$@"
 }
 
 function list-archives() {
     local -n _archives=$1
-    _archives=$(ls "$SCRIPT_DIR"/_build/prod/rel/lichat/releases/*/lichat.tar.gz)
+    _archives=$(ls "$SCRIPT_DIR"/_build/$VARIANT/lichat-*.tar.gz)
     IFS=$'\n' _archives=($(sort <<<"${_archives[*]}"))
     unset IFS
 }
@@ -26,11 +41,15 @@ function latest-archive() {
 }
 
 function archive-version() {
-    tar -xOzf "$1" releases/lichat.rel | sed -nr 's/.*"lichat","([^"]+)".*/\1/p'
+    tar -xOzf "$1" releases/start_erl.data | awk '{ print $2 }'
 }
 
 function version-archive() {
-    echo "$SCRIPT_DIR/_build/prod/rel/lichat/releases/$1/lichat.tar.gz"
+    echo "$SCRIPT_DIR/_build/$VARIANT/lichat-$1.tar.gz"
+}
+
+function remote-version() {
+    on-remote cat "$INSTALL_DIR/releases/start_erl.data" | awk '{ print $2 }'
 }
 
 function upload-archive() {
@@ -41,17 +60,12 @@ function upload-archive() {
     echo "$target"
 }
 
-function on-remote() {
-    ssh -o LogLevel=QUIET "$REMOTE" -t "$@" 1>&2 \
-        || eexit "Failed to execute on remote: $@"
-}
-
 function extract-remote() {
     local archive="$1"
     local target="${2:-$INSTALL_DIR}"
     local component="${3:-}"
     on-remote tar -xvzf "$archive" "$component" -C "$target"
-    on-remote chown -R lichat:lichat "$target"
+    on-remote chown -R "$REMOTE_USER:$REMOTE_USER" "$target"
 }
 
 function install-fresh() {
@@ -72,29 +86,34 @@ function setup-systemd() {
 function install-upgrade() {
     local archive="${1:-$(latest-archive)}"
     local version="$(archive-version "$archive")"
+    local remote_ver="$(remote-version)"
     local remote="$(upload-archive "$archive")"
-    extract-remote "$remote" "$INSTALL_DIR" "releases/$version"
-    on-remote "$INSTALL_DIR/bin/lichat" upgrade "$version"
+    extract-remote "$remote"
+    echo "{\"$remote_ver\",[{\"$version\", []}],[]}." > "$SCRIPT_DIR/lichat.appup"
+    log "Please review $SCRIPT_DIR/lichat.appup and hit enter when it is correct to proceed with the update."
+    read
+    scp "SCRIPT_DIR/lichat.appup" "$REMOTE:$INSTALL_DIR/lib/lichat-$version/ebin/lichat.appup" 1>&2 \
+        || eexit "Failed to copy appup to remote"
+    remote-rpc ":release_handler.upgrade_script(:lichat '$INSTALL_DIR/lib/lichat-$version/')"
+    remote-rpc ":release_handler.upgrade_app(:lichat '$INSTALL_DIR/lib/lichat-$version/')"
 }
 
-function build-fresh() {
-    MIX_ENV=prod mix distillery.release > /dev/null
-    echo "$(latest-archive)"
-}
-
-function build-upgrade() {
-    MIX_ENV=prod mix distillery.release --upgrade > /dev/null
+function build() {
+    MIX_ENV=$VARIANT mix release --overwrite --quiet &>> /dev/null
     echo "$(latest-archive)"
 }
 
 function install() {
-    local archive="$(build-fresh)"
+    local archive="$(build)"
     install-fresh "$archive"
     setup-systemd
 }
 
 function upgrade() {
-    local archive="$(build-upgrade)"
+    local archive="$(build)"
+    local version="$(remote-version)"
+    [ "$version" = "$(archive-version "$archive")" ] \
+       && eexit "Remote is already on version $version"
     install-upgrade "$archive"
 }
 
@@ -120,7 +139,11 @@ function main() {
         upgrade) upgrade ;;
         build) build-fresh ;;
         service) on-remote systemctl "$2" lichat.service ;;
-        list) echo "$(latest-archive)" ;;
+        version) remote-version ;;
+        list)
+            local archives
+            list-archives archives
+            echo "$(for i in "$archives"; do archive-version "$i"; done)" ;;
         help)
             cat << EOF
 Lichat Elixir Installation Manager
@@ -136,6 +159,7 @@ Available commands:
   build       --- Build a fresh install package
   service     --- Manage the systemd service
     action      --- The action to perform
+  version     --- Show the version on the remote
   list        --- List available archives
   help        --- Show this help
 

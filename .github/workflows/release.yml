@@ -30,7 +30,7 @@ jobs:
       - name: Compile release
         run: |
           mix compile
-          mix distillery.release
+          mix release
           cp _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat-${{ runner.os }}.tar.gz
         env:
           MIX_ENV: prod
