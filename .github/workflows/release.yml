@@ -31,7 +31,7 @@ jobs:
         run: |
           mix compile
           mix release
-          cp _build/prod/rel/lichat/releases/*/lichat.tar.gz lichat-${{ runner.os }}.tar.gz
+          cp _build/prod/lichat-*.tar.gz lichat-${{ runner.os }}.tar.gz
         env:
           MIX_ENV: prod
       - name: Upload artifact
