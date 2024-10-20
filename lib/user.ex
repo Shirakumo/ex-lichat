@@ -8,7 +8,7 @@ defmodule User do
   end
 
   defp generate_name() do
-    suffix = for _ <- 1..8, into: '', do: Enum.random('abcdefghijklmnopqrstuvwxyz0123456789')
+    suffix = for _ <- 1..8, into: ~c"", do: Enum.random(~c"abcdefghijklmnopqrstuvwxyz0123456789")
     IO.iodata_to_binary([ "Lichatter " | suffix ])
   end
 

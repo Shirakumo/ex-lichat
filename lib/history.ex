@@ -211,7 +211,7 @@ defmodule History do
   defp ensure_time(time), do: time
 
   defp escape_regex_char(x) do
-    if x in '-[]{}()+?.\\^$|#*' do
+    if x in ~c"-[]{}()+?.\\^$|#*" do
       [x, ?\\]
     else
       [x]
@@ -220,8 +220,8 @@ defmodule History do
 
   defp repchar(?\\, x), do: escape_regex_char(x)
   defp repchar(_, ?\\), do: []
-  defp repchar(_, ?*), do: '*.'
-  defp repchar(_, ?_), do: '.'
+  defp repchar(_, ?*), do: ~c"*."
+  defp repchar(_, ?_), do: ~c"."
   defp repchar(_, x), do: escape_regex_char(x)
 
   defp ensure_regex(nil), do: nil

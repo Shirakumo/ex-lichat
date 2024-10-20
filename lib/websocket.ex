@@ -105,13 +105,13 @@ Sec-WebSocket-Protocol: lichat\r
   
   defp decode_headers({:ok, {:http_header, _, _, field, value}, rest}, state) do
     state =  case field do
-               'Upgrade' ->
-                 Map.put(state, :upgrade, value == 'websocket')
-               'Connection' ->
+               ~c"Upgrade" ->
+                 Map.put(state, :upgrade, value == ~c"websocket")
+               ~c"Connection" ->
                  Map.put(state, :connection, String.contains?(List.to_string(value), "Upgrade"))
-               'Sec-WebSocket-Key' ->
+               ~c"Sec-WebSocket-Key" ->
                  Map.put(state, :key, List.to_string(value))
-               'X-Forwarded-For' ->
+               ~c"X-Forwarded-For" ->
                  Logger.info("Websocket forwarded: #{inspect(value)}")
                  case :inet.parse_ipv6_address(Enum.take_while(value, &(&1 != ?,))) do
                    {:ok, ip} -> Map.put(state, :ip, ip)

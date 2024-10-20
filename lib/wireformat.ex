@@ -47,7 +47,7 @@ defmodule WireFormat do
     end
 
     defp parse_float(list) do
-      {i, _} = Float.parse(to_string('0' ++ list ++ '0'))
+      {i, _} = Float.parse(to_string(~c"0" ++ list ++ ~c"0"))
       i
     end
 

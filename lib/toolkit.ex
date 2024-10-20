@@ -38,7 +38,7 @@ defmodule Toolkit do
   end
 
   def random_key(length \\ 32) do
-    fn -> Enum.random('abcdefghijklmnopqrstuvwxyz0123456789') end
+    fn -> Enum.random(~c"abcdefghijklmnopqrstuvwxyz0123456789") end
     |> Stream.repeatedly()
     |> Enum.take(length)
     |> to_string()
