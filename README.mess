@@ -12,7 +12,7 @@ mix deps.get
 iex -S mix
 ::
 
-You can configure and override settings from the ''config''(config/config.exs) in the ``config/secret.exs`` file.
+You can configure and override settings from the ''config''(config/runtime.exs) in the ``config/secret.exs`` file.
 
 ## Running a Production Server
 Download the latest ''release''(https://github.com/shirakumo/ex-lichat/releases/latest) tarball and extract it to somewhere on your server. We highly recommend creating a custom user for it as well. You can then use the ``bin/lichat help`` command to get information about what you can do to the server.
@@ -24,7 +24,7 @@ ln -s /home/lichat/lichat.service /etc/systemd/system/
 systemctl --now enable lichat
 ::
 
-You'll likely also want to change the SSL keys in ``config/`` and configure the server with the ``config/secret.exs`` file. You can reference the ''``config/config.exs``''(link config/config.exs) file for the available options.
+You'll likely also want to change the SSL keys in ``config/`` and configure the server with the ``config/secret.exs`` file. You can reference the ''``config/runtime.exs``''(link config/runtime.exs) file for the available options.
 
 ## Supported Extensions
 In addition to the core protocol, ExLichat also supports many of the specified extensions:
