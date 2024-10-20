@@ -111,7 +111,7 @@ function build() {
 function install() {
     local archive="$(build)"
     install-fresh "$archive"
-#    setup-systemd
+    setup-systemd
 }
 
 function upgrade() {
@@ -145,7 +145,7 @@ function main() {
         build) build ;;
         service) on-remote systemctl "$2" lichat.service ;;
         version) remote-version ;;
-        list)
+        list-versions)
             local archives
             list-archives archives
             echo "$(for i in "$archives"; do archive-version "$i"; done)" ;;
@@ -165,7 +165,7 @@ Available commands:
   service     --- Manage the systemd service
     action      --- The action to perform
   version     --- Show the version on the remote
-  list        --- List available archives
+  list-versions  --- List available archives
   help        --- Show this help
 
 Relies on the following envvars:
