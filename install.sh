@@ -103,7 +103,8 @@ function install-upgrade() {
 
 function build() {
     log "Building current release"
-    MIX_ENV=$VARIANT mix release --overwrite --quiet &>> /dev/null
+    MIX_ENV=$VARIANT mix release --overwrite --quiet &>> /dev/null \
+        || eexit "Build failed!"
     echo "$(latest-archive)"
 }
 
@@ -141,7 +142,7 @@ function main() {
     case "${1:-help}" in
         install) install ;;
         upgrade) upgrade ;;
-        build) build-fresh ;;
+        build) build ;;
         service) on-remote systemctl "$2" lichat.service ;;
         version) remote-version ;;
         list)
