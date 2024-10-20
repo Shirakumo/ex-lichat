@@ -83,7 +83,7 @@ defmodule Update do
 
   def find_type(update_name) do
     ## TODO: cache list_types
-    Enum.find(list_types(), &(&1.type_symbol == update_name))
+    Enum.find(list_types(), &(&1.type_symbol() == update_name))
   end
 
   def ensure_type(type) when is_atom(type), do: type
