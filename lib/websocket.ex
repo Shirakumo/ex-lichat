@@ -112,7 +112,7 @@ Sec-WebSocket-Protocol: lichat\r
                ~c"Sec-WebSocket-Key" ->
                  Map.put(state, :key, List.to_string(value))
                ~c"X-Forwarded-For" ->
-                 Logger.info("Websocket forwarded: #{inspect(value)}")
+                 Logger.info("#{describe(state)} Websocket forwarded: #{inspect(value)}")
                  case :inet.parse_ipv6_address(Enum.take_while(value, &(&1 != ?,))) do
                    {:ok, ip} -> Map.put(state, :ip, ip)
                    _ -> state

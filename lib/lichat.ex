@@ -50,7 +50,7 @@ defmodule Lichat do
   end
 
   def notify(message) do
-    Logger.info(message)
+    Logger.info("Global notification: #{message}")
     Channel.write_sync(Channel.primary(), Update.make(Update.Message, [
               channel: server_name(),
               from: server_name(),
