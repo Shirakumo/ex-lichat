@@ -82,7 +82,14 @@ defmodule History do
 
   def create(channel) do
     if Process.whereis(History) != nil do
-      Query.create(channel: channel)
+      case Query.create(channel: channel) do
+        %Postgrex.Error{message: _, postgres: detail, connection_id: _, query: _} ->
+          case detail.code do
+            :unique_violation -> :ok
+            _ -> {:error, detail}
+          end
+        result -> result
+      end
     else
       {:error, :not_connected}
     end
