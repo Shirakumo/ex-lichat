@@ -154,7 +154,7 @@ defmodule IRC do
   end
 
   def decode(state, command, args) do
-    Logger.info("#{describe(state)} IRC: Ignoring unknown command #{command} #{Enum.join(args, " ")}")
+    Lichat.Connection.log(state, "Ignoring unknown IRC command #{command} #{Enum.join(args, " ")}")
     {:more, state}
   end
 

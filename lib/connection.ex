@@ -27,12 +27,17 @@ defmodule Lichat.Connection do
     if ssl do
       {:ok, {addr, _port}} = :ssl.sockname(socket)
       :ssl.setopts(socket, opts)
-      Task.start_link(__MODULE__, :handshake_ssl, [%Lichat.Connection{socket: socket, ip: addr, ssl: true}])
+      start_link(:handshake_ssl, %Lichat.Connection{socket: socket, ip: addr, ssl: true})
     else
       {:ok, {addr, _port}} = :inet.peername(socket)
       :inet.setopts(socket, opts)
-      Task.start_link(__MODULE__, :run, [%Lichat.Connection{socket: socket, ip: addr, ssl: false}])
+      start_link(:run, %Lichat.Connection{socket: socket, ip: addr, ssl: false})
     end
+  end
+
+  def start_link(target, state) do
+    log(state, "New connection")
+    Task.start_link(__MODULE__, target, [state])
   end
 
   def handshake_ssl(state) do
@@ -41,13 +46,13 @@ defmodule Lichat.Connection do
         case :ssl.handshake_continue(socket, [], Toolkit.config(:ssl_timeout)) do
           {:ok, socket} -> run(%{state | socket: socket})
           {:error, reason} ->
-            Logger.info("#{describe(state)} SSL handshake failed: #{inspect(reason)}")
+            log(state, "SSL handshake failed: #{inspect(reason)}")
             :ssl.close(state.socket)
         end
       {:ok, socket} ->
         run(%{state | socket: socket})
       {:error, reason} ->
-        Logger.info("#{describe(state)} SSL handshake failed: #{inspect(reason)}")
+        log(state, "SSL handshake failed: #{inspect(reason)}")
         :ssl.close(state.socket)
     end
   end
@@ -60,16 +65,16 @@ defmodule Lichat.Connection do
       {:tcp, socket, data} ->
         handle_data(socket, data, state)
       {:ssl_closed, reason} ->
-        Logger.info("#{describe(state)} SSL closed: #{inspect(reason)}")
+        log(state, "SSL closed: #{inspect(reason)}")
         %{state | state: :closed}
       {:tcp_closed, reason} ->
-        Logger.info("#{describe(state)} TCP closed: #{inspect(reason)}")
+        log(state, "TCP closed: #{inspect(reason)}")
         %{state | state: :closed}
       {:ssl_error, reason, _} ->
-        Logger.info("#{describe(state)} SSL error: #{inspect(reason)}")
+        log(state, "SSL error: #{inspect(reason)}")
         %{state | state: :closed}
       {:tcp_error, reason} ->
-        Logger.info("#{describe(state)} TCP error: #{inspect(reason)}")
+        log(state, "TCP error: #{inspect(reason)}")
         %{state | state: :closed}
       {:send, msg} ->
         write(state, msg)
@@ -81,7 +86,7 @@ defmodule Lichat.Connection do
         close(state)
       :check_blacklist ->
         if Blacklist.has?(state.ip) do
-          Logger.info("#{describe(state)} Killing connection: on blacklist")
+          log(state, "Killing connection: on blacklist")
           close(state)
         else
           state
@@ -101,10 +106,10 @@ defmodule Lichat.Connection do
     after 1_000 ->
         case state.state do
           nil ->
-            Logger.info("#{describe(state)} Timed out before connecting, closing")
+            log(state, "Timed out before connecting, closing")
             shutdown(state)
           {:timeout, 120, _} ->
-            Logger.info("#{describe(state)} Timed out, closing")
+            log(state, "Timed out, closing")
             close(state)
           {:timeout, n, p} ->
             if rem(n, 30) == 0 do
@@ -141,7 +146,7 @@ defmodule Lichat.Connection do
       {:more, state} ->
         state
       {:error, reason, state} ->
-        Logger.info("#{describe(state)} Handler failure: #{reason}")
+        log(state, "Handler failure: #{reason}")
         shutdown(state)
       :shutdown ->
         shutdown(state)
@@ -169,7 +174,7 @@ defmodule Lichat.Connection do
     time = Toolkit.time()
     cond do
       maxbuffer <= buflength ->
-        Logger.info("#{describe(state)} has been killed due to exceeded buffer queue.")
+        log(state, "has been killed due to exceeded buffer queue.")
         write(state, Update.fail(update, Update.TooManyUpdates))
         close(state)
       0 < buflength ->
@@ -181,7 +186,7 @@ defmodule Lichat.Connection do
         state = %{state | counter: state.counter + 1}
         handle_update_direct(state, update)
       true ->
-        Logger.info("#{describe(state)} has been put on buffer due to excessive messages.")
+        log(state, "has been put on buffer due to excessive messages.")
         write(state, Update.fail(Update.TooManyUpdates,
               "You have been sending too many messages and have been put on a queue."))
         %{state | buffer: :queue.in(update, state.buffer)}
@@ -271,11 +276,11 @@ defmodule Lichat.Connection do
       case module.init(data, state) do
         {:ok, state} ->
           if Blacklist.has?(state.ip) do
-            Logger.info("#{describe(state)} Connection from denied: on blacklist")
-            History.ip_log(state, Update.TooManyConnections)
+            log(state, "Connection from denied: on blacklist")
+            History.ip_log(state, state, Update.TooManyConnections)
             %{state | type: nil}
           else
-            Logger.info("#{describe(state)} New #{inspect(module)} connection")
+            log(state, "New #{inspect(module)} connection")
             state
           end
         :error -> nil
@@ -311,7 +316,7 @@ defmodule Lichat.Connection do
     state = %{state | extensions: (if update.type.extensions == nil, do: [], else: MapSet.new(update.type.extensions))}
     primary = Lichat.server_name()
     user = User.connect(User.ensure_user(update.from), self())
-    History.ip_log(state, Update.Connect)
+    History.ip_log(state, state, Update.Connect)
     write(state, Update.reply(update, Update.Connect, [
               from: update.from,
               version: Lichat.version(),
@@ -336,7 +341,7 @@ defmodule Lichat.Connection do
   end
 
   def shutdown(state) do
-    History.ip_log(state, Update.Disconnect)
+    History.ip_log(state, state, Update.Disconnect)
     if state.ssl do
       :ssl.shutdown(state.socket, :write)
     else
@@ -377,5 +382,9 @@ defmodule Lichat.Connection do
 
   def describe(state) do
     "#{inspect(self())}:#{Toolkit.ip(state.ip)}:#{state.name}"
+  end
+
+  def log(state, format) do
+    Logger.info("#{describe(state)} #{format}")
   end
 end
