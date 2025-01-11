@@ -22,6 +22,9 @@ defmodule Websocket do
           {:ok, _request, headers} ->
             case decode_headers(headers) do
               {:ok, rest, fields} ->
+                if Map.has_key?(fields, :ip) do
+                  Lichat.Connection.log(state, "Websocket forwarded: #{Toolkit.ip(Map.get(fields, :ip))}")
+                end
                 Lichat.Connection.write(state, encode_http_response(fields[:key]))
                 if(rest != <<>>, do: send(self(), {:tcp, state.socket, rest}))
                 {:more, %{state | accumulator: {<<>>, <<>>}, state: nil, ip: Map.get(fields, :ip, state.ip)}}
@@ -112,7 +115,6 @@ Sec-WebSocket-Protocol: lichat\r
                ~c"Sec-WebSocket-Key" ->
                  Map.put(state, :key, List.to_string(value))
                ~c"X-Forwarded-For" ->
-                 Lichat.Connection.log(state, "Websocket forwarded: #{inspect(value)}")
                  case :inet.parse_ipv6_address(Enum.take_while(value, &(&1 != ?,))) do
                    {:ok, ip} -> Map.put(state, :ip, ip)
                    _ -> state

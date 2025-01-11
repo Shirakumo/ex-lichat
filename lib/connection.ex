@@ -36,7 +36,7 @@ defmodule Lichat.Connection do
   end
 
   def start_link(target, state) do
-    log(state, "New connection")
+    log(state, "Starting connection")
     Task.start_link(__MODULE__, target, [state])
   end
 
@@ -277,7 +277,7 @@ defmodule Lichat.Connection do
         {:ok, state} ->
           if Blacklist.has?(state.ip) do
             log(state, "Connection from denied: on blacklist")
-            History.ip_log(state, state, Update.TooManyConnections)
+            History.ip_log(state, Update.TooManyConnections)
             %{state | type: nil}
           else
             log(state, "New #{inspect(module)} connection")
@@ -341,7 +341,7 @@ defmodule Lichat.Connection do
   end
 
   def shutdown(state) do
-    History.ip_log(state, state, Update.Disconnect)
+    History.ip_log(state, Update.Disconnect)
     if state.ssl do
       :ssl.shutdown(state.socket, :write)
     else
