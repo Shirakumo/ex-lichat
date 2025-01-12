@@ -42,7 +42,7 @@ defmodule Lichat.MixProject do
       {:mime, "~> 1.2"},
       {:ex_unicode, "~> 1.0"},
       {:postgrex, "~> 0.15.8"},
-      {:yesql, "~> 1.0.1"},
+      {:ayesql, "~> 1.1"},
       {:image, "~> 0.37"},
       {:observer_cli, "~> 1.7"}
     ]
