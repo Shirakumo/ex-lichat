@@ -20,15 +20,15 @@ CREATE TABLE IF NOT EXISTS "lichat-channel-members"(
 
 -- name: create_channel
 INSERT INTO "lichat-channels"("name", "registrant", "lifetime", "expiry")
-VALUES(:channel, :registrant, :lifetime, :expiry);
+VALUES(:name, :registrant, :lifetime, :expiry);
 
 -- name: delete_channel
 DELETE FROM "lichat-channels" 
- WHERE "name" = :channel;
+ WHERE "name" = :name;
 
 -- name: find_channel
 SELECT * FROM "lichat-channels"
- WHERE "name" = :channel;
+ WHERE "name" = :name;
 
 -- name: list_channels
 SELECT * FROM "lichat-channels"

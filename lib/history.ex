@@ -1,105 +1,11 @@
 defmodule History do
-  require Logger
-  defmodule Pool do
-  end
-  defmodule Query do
-    use Yesql, driver: Postgrex, conn: History
-    Yesql.defquery("lib/sql/create_history_channels_table.sql")
-    Yesql.defquery("lib/sql/create_history_table.sql")
-    Yesql.defquery("lib/sql/create_iplog_table.sql")
-    Yesql.defquery("lib/sql/create.sql")
-    Yesql.defquery("lib/sql/search.sql")
-    Yesql.defquery("lib/sql/backlog.sql")
-    Yesql.defquery("lib/sql/record.sql")
-    Yesql.defquery("lib/sql/clear.sql")
-    Yesql.defquery("lib/sql/ip_log.sql")
-    Yesql.defquery("lib/sql/ip_search.sql")
-  end
-  
   def limit, do: 100
 
-  def start_link(opts) do
-    if opts == [] do
-      :ignore
-    else
-      case Postgrex.start_link([{:name, History} | opts]) do
-        {:ok, pid} ->
-          Logger.info("Connected to PSQL server at #{Keyword.get(opts, :hostname)}")
-          case create_tables() do
-            :ok -> {:ok, pid}
-            x -> x
-          end
-        x -> x
-      end
-    end
-  end
-
-  def child_spec(opts) do
-    %{
-      id: __MODULE__,
-      start: {__MODULE__, :start_link, [opts]},
-      type: :worker,
-      restart: :permanent,
-      shutdown: 500
-    }
-  end
-
-  def create_tables() do
-    with {:ok, _} <- Query.create_history_channels_table([]),
-         {:ok, _} <- Query.create_history_table([]),
-         {:ok, _} <- Query.create_iplog_table([]) do
-      :ok
-    end
-  end
-
-  def ip_log(connection, action, target \\ nil) do
-    if Process.whereis(History) != nil do
-      Query.ip_log(
-        ip: Toolkit.ip(connection.ip),
-        clock: Toolkit.universal_time(),
-        action: action_id(action),
-        from: connection.name,
-        target: target)
-    else
-      {:error, :not_connected}
-    end
-  end
-
-  def ip_search(ip \\ nil, opts \\ [])
-  
-  def ip_search(ip, opts) do
-    if Process.whereis(History) != nil do
-      map_ip_result(Query.ip_search(
-            ip: if(is_nil(ip), do: nil, else: Toolkit.ip(ip)),
-            from: Keyword.get(opts, :from, nil),
-            action: action_id(Keyword.get(opts, :action, Update)),
-            limit: Keyword.get(opts, :count, 100),
-            offset: Keyword.get(opts, :start, 0)))
-    else
-      {:error, :not_connected}
-    end
-  end
-
-  def create(channel) do
-    if Process.whereis(History) != nil do
-      case Query.create(channel: channel) do
-        %Postgrex.Error{message: _, postgres: detail, connection_id: _, query: _} ->
-          case detail.code do
-            :unique_violation -> :ok
-            _ -> {:error, detail}
-          end
-        result -> result
-      end
-    else
-      {:error, :not_connected}
-    end
-  end
-
   def record(update) do
-    if Process.whereis(History) != nil do
+    Sql.with_db(fn ->
       case update.type.__struct__ do
         Update.React ->
-          Query.record(
+          Sql.Query.history_record(
             id: to_string(update.id),
             clock: update.clock,
             from: update.from,
@@ -113,7 +19,7 @@ defmodule History do
                    nil -> nil
                    x -> WireFormat.print1(x)
                  end
-          Query.record(
+          Sql.Query.history_record(
             id: to_string(update.id),
             clock: update.clock,
             from: update.from,
@@ -128,33 +34,27 @@ defmodule History do
             end)
           _ -> {:error, :unsupported_update_type}
       end
-    else
-      {:error, :not_connected}
-    end
+    end)
   end
 
   def clear(channel) do
-    if Process.whereis(History) != nil do
-      Query.clear(channel: channel)
-    else
-      {:error, :not_connected}
-    end
+    Sql.with_db(fn ->
+      Sql.Query.history_clear(channel: channel)
+    end)
   end
 
   def backlog(channel, since \\ 0, limit \\ 100) do
-    if Process.whereis(History) != nil do
-      map_result(Query.backlog(channel: channel, since: since, limit: limit))
-    else
-      {:error, :not_connected}
-    end
+    Sql.with_db(fn ->
+      map_result(Sql.Query.history_backlog(channel: channel, since: since, limit: limit))
+    end)
   end
   
   def search(channel, query, offset \\ 0) do
-    if Process.whereis(History) != nil do
+    Sql.with_db(fn ->
       from = Toolkit.getf(query, :from)
       text = Toolkit.getf(query, :text)
       [time_min, time_max] = Toolkit.getf(query, :clock, [true, true])
-      map_result(Query.search(
+      map_result(Sql.Query.history_search(
             channel: channel,
             from: ensure_regex(from),
             time_min: ensure_time(time_min),
@@ -162,9 +62,7 @@ defmodule History do
             text: ensure_regex(text),
             limit: limit(),
             offset: offset))
-    else
-      {:error, :not_connected}
-    end
+    end)
   end
 
   defp map_result({:ok, results}), do: Enum.map(results, &map_result/1)
@@ -241,45 +139,5 @@ defmodule History do
       {c, repchar(p, c) ++ acc}
     end)
     to_string(Enum.reverse(acc))
-  end
-
-  defp action_id_map, do: [
-    Update.Connect,
-    Update.Disconnect,
-    Update.TooManyConnections,
-    Update.InvalidPassword,
-    Update.UsernameTaken,
-    Update.NoSuchProfile,
-    Update.Register,
-    Update.Create,
-    Update.Ban,
-    Update.Unban,
-    Update.IpBan,
-    Update.IpUnban,
-    Update.Block,
-    Update.Unblock,
-    Update.Destroy,
-    Update.Kill,
-    Update.Permissions,
-    Update.SetChannelInfo,
-    Update.SetUserInfo,
-    Update.AssumeIdentity,
-    Update.ShareIdentity,
-    Update.Bridge ]
-  defp action_id(action), do: Enum.find_index(action_id_map(), fn x -> x == action end)
-  defp id_action(id), do: Enum.at(action_id_map(), id)
-
-  defp map_ip_result({:ok, results}), do: Enum.map(results, &map_ip_result/1)
-  defp map_ip_result({:error, e}), do: {:error, e}
-  
-  defp map_ip_result(map) do
-    [
-      id: map.id,
-      ip: map.ip,
-      clock: map.clock,
-      action: id_action(map.action),
-      from: map.from,
-      target: map.target
-    ]
   end
 end

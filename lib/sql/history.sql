@@ -12,6 +12,15 @@ CREATE TABLE IF NOT EXISTS "lichat-history"(
   CONSTRAINT "user" FOREIGN KEY("user") REFERENCES "lichat-users"("id") ON DELETE CASCADE
 );
 
+-- name: create_history_text_index
+CREATE INDEX IF NOT EXISTS "lichat-history.text" ON "lichat-history"("text");
+
+-- name: create_history_user_index
+CREATE INDEX IF NOT EXISTS "lichat-history.user" ON "lichat-history"("user");
+
+-- name: create_history_channel_index
+CREATE INDEX IF NOT EXISTS "lichat-history.channel" ON "lichat-history"("channel");
+
 -- name: history_record
 INSERT INTO "lichat-history"("id", "user", "bridge", "clock", "channel", "text", "rich", "markup")
 VALUES (:id,
@@ -22,6 +31,10 @@ VALUES (:id,
         :text,
         :rich,
         :markup);
+
+-- name: history_clear
+DELETE FROM "lichat-history" AS H
+WHERE "channel" IN (SELECT "id" FROM (:find_channel))
 
 -- name: history_backlog
 SELECT * FROM (
