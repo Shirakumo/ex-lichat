@@ -173,6 +173,7 @@ defmodule Lichat.Connection do
     {max, period, maxbuffer} = Toolkit.config(:max_updates_per_connection)
     buflength = :queue.len(state.buffer)
     time = Toolkit.time()
+    Sql.update_connection(state)
     cond do
       maxbuffer <= buflength ->
         log(state, "has been killed due to exceeded buffer queue.")

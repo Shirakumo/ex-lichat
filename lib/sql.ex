@@ -36,8 +36,8 @@ defmodule Sql do
   end
   
   def create_channel(channel) do
-    with_db("Failed to create channel entry for #{channel.name}", fn ->
-      handle_create(Query.create_channel(
+    with_db("Failed to create channel #{channel.name}", fn ->
+      ignore_unique(Query.create_channel(
             name: channel.name,
             registrant: channel.registrant,
             lifetime: channel.lifetime,
@@ -53,7 +53,7 @@ defmodule Sql do
   
   def create_user(user) do
     with_db("Failed to create user #{user.name}", fn ->
-      handle_create(Query.create_user(
+      ignore_unique(Query.create_user(
             name: user.name,
             registered: Profile.registered?(user.name),
             created_on: Toolkit.universal_time()))
@@ -74,7 +74,7 @@ defmodule Sql do
 
   def join_channel(channel, user) do
     with_db("Failed to join user #{user} to #{channel}", fn ->
-      Query.join_channel(channel: channel, user: user)
+      ignore_unique(Query.join_channel(channel: channel, user: user))
     end)
   end
 
@@ -104,9 +104,9 @@ defmodule Sql do
     end)
   end
 
-  def update_connection(connection) do
+  def update_connection(connection, last_update \\ Toolkit.universal_time()) do
     with_db("Failed to update connection #{Lichat.Connection.describe(connection)}", fn ->
-      Query.update_connection(id: connection.sql_id, last_update: connection.last_update)
+      Query.update_connection(id: connection.sql_id, last_update: last_update)
     end)
   end
 
@@ -122,7 +122,7 @@ defmodule Sql do
     if Process.whereis(Sql) != nil do
       case f.() do
         {:error, error} ->
-          Logger.error("[Sql] #{faillog}: #{inspect(error)}")
+          Logger.warning("[Sql] #{faillog}: #{inspect(error)}")
           {:error, error}
         x -> x
       end
@@ -150,9 +150,9 @@ defmodule Sql do
     end
   end
                                                   
-  defp handle_create(response) do
+  defp ignore_unique(response) do
     case response do
-      %Postgrex.Error{message: _, postgres: detail, connection_id: _, query: _} ->
+      %Postgrex.Error{postgres: detail} ->
         case detail.code do
           :unique_violation -> :ok
           _ -> {:error, detail}
