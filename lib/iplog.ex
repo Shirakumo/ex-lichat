@@ -1,6 +1,6 @@
 defmodule IpLog do
   def record(connection, action, target \\ nil) do
-    Sql.with_db(fn ->
+    Sql.with_db("Failed to record Ip Log", fn ->
       Sql.Query.ip_log(
         ip: Toolkit.ip(connection.ip),
         clock: Toolkit.universal_time(),

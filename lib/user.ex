@@ -179,7 +179,9 @@ defmodule User do
                 :not_registered -> MapSet.new()
                 map -> map
               end
-    {:ok, %User{name: name, blocked: blocked}}
+    user = %User{name: name, blocked: blocked}
+    Sql.create_user(user)
+    {:ok, user}
   end
 
   @impl true
@@ -256,6 +258,7 @@ defmodule User do
   @impl true
   def handle_cast({:connect, from}, user) do
     ref = Process.monitor(from)
+    Sql.update_user(user)
     {:noreply, %{user | connections: Map.put(user.connections, from, ref)}}
   end
   
@@ -289,6 +292,7 @@ defmodule User do
   @impl true
   def handle_cast(:destroy, user) do
     Enum.each(user.connections, fn connection -> send(connection, :close) end)
+    Sql.delete_user(user)
     {:stop, :normal, user}
   end
 
@@ -336,6 +340,9 @@ defmodule User do
       Map.has_key?(user.connections, pid) ->
         connections = Map.delete(user.connections, pid)
         if Enum.empty?(connections) do
+          if not Profile.registered?(user.name) do
+            Sql.delete_user(user)
+          end
           {:stop, :normal, user}
         else
           {:noreply, %{user | connections: connections}}

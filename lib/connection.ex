@@ -15,7 +15,8 @@ defmodule Lichat.Connection do
     ssl: false,
     started_on: Toolkit.universal_time(),
     extensions: MapSet.new(),
-    identities: %{}
+    identities: %{},
+    sql_id: nil
 
   @callback init(String.t, Map.t) :: {:ok, Map.t} | :error
   @callback handle_payload(Map.t, String.t, Integer.t) :: {:ok, String.t, Map.t} | {:more, Map.t}
@@ -317,6 +318,7 @@ defmodule Lichat.Connection do
     primary = Lichat.server_name()
     user = User.connect(User.ensure_user(update.from), self())
     IpLog.record(state, Update.Connect)
+    state = %{state | sql_id: Sql.create_connection(state)}
     write(state, Update.reply(update, Update.Connect, [
               from: update.from,
               version: Lichat.version(),
@@ -341,6 +343,7 @@ defmodule Lichat.Connection do
   end
 
   def shutdown(state) do
+    Sql.delete_connection(state)
     IpLog.record(state, Update.Disconnect)
     if state.ssl do
       :ssl.shutdown(state.socket, :write)

@@ -36,49 +36,96 @@ defmodule Sql do
   end
   
   def create_channel(channel) do
-    with_db(fn ->
-      case handle_create(Query.create_channel(
-                name: channel.name,
-                registrant: channel.registrant,
-                lifetime: channel.lifetime,
-                expiry: channel.expiry)) do
-        {:error, error} ->
-          Logger.error("Failed to create channel entry for #{channel.name}: #{inspect(error)}")
-          error
-        x -> x
-      end
+    with_db("Failed to create channel entry for #{channel.name}", fn ->
+      handle_create(Query.create_channel(
+            name: channel.name,
+            registrant: channel.registrant,
+            lifetime: channel.lifetime,
+            expiry: channel.expiry))
     end)
   end
 
   def delete_channel(channel) do
-    with_db(fn ->
-      case Query.delete_channel(name: channel.name) do
-        {:error, error} ->
-          Logger.error("Failed to delete channel entry for #{channel.name}: #{inspect(error)}")
-          error
-        x -> x
-      end
+    with_db("Failed to delete channel #{channel.name}", fn ->
+      Query.delete_channel(name: channel.name)
     end)
   end
   
   def create_user(user) do
-    with_db(fn ->
+    with_db("Failed to create user #{user.name}", fn ->
       handle_create(Query.create_user(
             name: user.name,
-            registered: Profile.lookup(user.name) == :ok,
+            registered: Profile.registered?(user.name),
             created_on: Toolkit.universal_time()))
     end)
   end
 
   def delete_user(user) do
-    with_db(fn ->
+    with_db("Failed to delete user #{user.name}", fn ->
       Query.delete_user(name: user.name)
+    end)
+  end
+
+  def update_user(user, last_connected \\ Toolkit.universal_time()) do
+    with_db("Failed to delete user #{user.name}", fn ->
+      Query.update_user(name: user.name, last_connected: last_connected)
+    end)
+  end
+
+  def join_channel(channel, user) do
+    with_db("Failed to join user #{user} to #{channel}", fn ->
+      Query.join_channel(channel: channel, user: user)
+    end)
+  end
+
+  def leave_channel(channel, user) do
+    with_db("Failed to leave user #{user} from #{channel}", fn ->
+      Query.leave_channel(channel: channel, user: user)
+    end)
+  end
+
+  def create_connection(connection) do
+    with_db("Failed to create connection #{Lichat.Connection.describe(connection)}", fn ->
+      case Query.create_connection(
+            ip: connection.ip,
+            ssl: connection.ssl,
+            user: connection.name,
+            last_update: connection.last_update,
+            started_on: connection.started_on) do
+        {:ok, ok} -> ok
+        x -> x
+      end
+    end)
+  end
+
+  def delete_connection(connection) do
+    with_db("Failed to delete connection #{Lichat.Connection.describe(connection)}", fn ->
+      Query.delete_connection(id: connection.sql_id)
+    end)
+  end
+
+  def update_connection(connection) do
+    with_db("Failed to update connection #{Lichat.Connection.describe(connection)}", fn ->
+      Query.update_connection(id: connection.sql_id, last_update: connection.last_update)
     end)
   end
 
   def with_db(f) do
     if Process.whereis(Sql) != nil do
       f.()
+    else
+      {:error, :not_connected}
+    end
+  end
+
+  def with_db(faillog, f) do
+    if Process.whereis(Sql) != nil do
+      case f.() do
+        {:error, error} ->
+          Logger.error("[Sql] #{faillog}: #{inspect(error)}")
+          {:error, error}
+        x -> x
+      end
     else
       {:error, :not_connected}
     end

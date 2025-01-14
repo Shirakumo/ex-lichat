@@ -87,6 +87,10 @@ defmodule Profile do
     end, :not_registered)
   end
 
+  def registered?(name) do
+    :ok == lookup(name)
+  end
+
   def check(name, password) do
     password = case password do
                  false -> ""

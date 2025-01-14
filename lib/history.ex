@@ -2,7 +2,7 @@ defmodule History do
   def limit, do: 100
 
   def record(update) do
-    Sql.with_db(fn ->
+    Sql.with_db("Failed to record update", fn ->
       case update.type.__struct__ do
         Update.React ->
           Sql.Query.history_record(
@@ -38,7 +38,7 @@ defmodule History do
   end
 
   def clear(channel) do
-    Sql.with_db(fn ->
+    Sql.with_db("Failed to clear channel history", fn ->
       Sql.Query.history_clear(channel: channel)
     end)
   end

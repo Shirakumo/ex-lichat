@@ -178,7 +178,6 @@ defmodule Channel do
     case Registry.lookup(Channel, String.downcase(channel.name)) do
       [] ->
         {:ok, pid} = Channels.start_child([channel])
-        Sql.create_channel(channel)
         Logger.info("New channel #{channel.name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->
@@ -460,24 +459,26 @@ defmodule Channel do
     end
     {:ok, _} = Registry.register(__MODULE__, String.downcase(channel.name), nil)
     {:ok, timer} = if lifetime == nil, do: {:ok, nil}, else: :timer.send_after(lifetime * 1000, :expire)
-    {:ok, %Channel{
-        name: channel.name,
-        registrant: registrant,
-        permissions: Map.merge(def_permissions, channel.permissions),
-        users: %{},
-        meta: Map.get(channel, :meta, %{}),
-        lifetime: lifetime,
-        expiry: timer,
-        pause: Map.get(channel, :pause, 0),
-        last_update: %{},
-        quiet: Map.get(channel, :quiet, MapSet.new())
-     }}
+    channel = %Channel{
+      name: channel.name,
+      registrant: registrant,
+      permissions: Map.merge(def_permissions, channel.permissions),
+      users: %{},
+      meta: Map.get(channel, :meta, %{}),
+      lifetime: lifetime,
+      expiry: timer,
+      pause: Map.get(channel, :pause, 0),
+      last_update: %{},
+      quiet: Map.get(channel, :quiet, MapSet.new())}
+    Sql.create_channel(channel)
+    {:ok, channel}
   end
   
   @impl true
   def handle_cast({:leave, from}, channel) do
-    {{_name, ref, _time}, users} = Map.pop(channel.users, from)
+    {{name, ref, _time}, users} = Map.pop(channel.users, from)
     Process.demonitor(ref)
+    Sql.leave_channel(channel.name, name)
     if Enum.empty?(users) and channel.lifetime != nil do
       {:ok, timer} = :timer.send_after(channel.lifetime * 1000, :expire)
       {:noreply, %{channel | users: users, expiry: timer}}
@@ -572,6 +573,7 @@ defmodule Channel do
                 channel: channel.name,
                 from: name ]))
     end)
+    Sql.delete_channel(channel)
     {:stop, :normal, channel}
   end
 
@@ -611,6 +613,7 @@ defmodule Channel do
       if channel.expiry != nil do
         :timer.cancel(channel.expiry)
       end
+      Sql.join_channel(channel.name, name)
       {:reply, :ok, %{channel | users: Map.put(channel.users, from, {name, ref, Toolkit.universal_time()}), expiry: nil}}
     end
   end
