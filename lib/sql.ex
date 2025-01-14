@@ -2,11 +2,11 @@ defmodule Sql do
   require Logger
   defmodule Query do
     use AyeSQL
-    defqueries("lib/sql/channel.sql")
-    defqueries("lib/sql/connection.sql")
-    defqueries("lib/sql/history.sql")
-    defqueries("lib/sql/ip_log.sql")
-    defqueries("lib/sql/user.sql")
+    defqueries("sql/channel.sql")
+    defqueries("sql/connection.sql")
+    defqueries("sql/history.sql")
+    defqueries("sql/ip_log.sql")
+    defqueries("sql/user.sql")
   end
 
   def start_link(opts) do
@@ -37,18 +37,27 @@ defmodule Sql do
   
   def create_channel(channel) do
     with_db(fn ->
-      handle_create(Query.create_channel(
-            name: channel.name,
-            registrant: channel.registrant,
-            lifetime: channel.lifetime,
-            expiry: channel.expiry))
-      
+      case handle_create(Query.create_channel(
+                name: channel.name,
+                registrant: channel.registrant,
+                lifetime: channel.lifetime,
+                expiry: channel.expiry)) do
+        {:error, error} ->
+          Logger.error("Failed to create channel entry for #{channel.name}: #{inspect(error)}")
+          error
+        x -> x
+      end
     end)
   end
 
   def delete_channel(channel) do
     with_db(fn ->
-      Query.delete_channel(name: channel.name)
+      case Query.delete_channel(name: channel.name) do
+        {:error, error} ->
+          Logger.error("Failed to delete channel entry for #{channel.name}: #{inspect(error)}")
+          error
+        x -> x
+      end
     end)
   end
   

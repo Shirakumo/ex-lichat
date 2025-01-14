@@ -6,7 +6,7 @@ defupdate(Permissions, "PERMISSIONS", [:channel, [:permissions, required: false]
       {:ok, channel} ->
         if type.permissions != nil do
           Logger.info("#{update.from} set permissions on #{type.channel}", [intent: :user])
-          History.ip_log(state, Update.Permissions, type.channel)
+          IpLog.record(state, Update.Permissions, type.channel)
           Channel.update(channel, type.permissions)
         end
         Lichat.Connection.write(state, Update.reply(update, Update.Permissions, [

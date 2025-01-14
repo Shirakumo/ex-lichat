@@ -66,7 +66,7 @@ config :lichat,
   banner_file: "config/banner.txt"
 
 ## History support requires Postgres server
-# config :lichat, History,
+# config :lichat, Database,
 #   hostname: "...",
 #   username: "...",
 #   password: "...",

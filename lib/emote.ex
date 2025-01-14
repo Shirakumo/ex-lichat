@@ -35,18 +35,19 @@ defmodule Emote do
   end
 
   def save(channel, name, content_type, payload) do
-    case Toolkit.config!(:emote_directory) do
-      nil -> {:error, "Disabled."}
-      directory ->
+    case file_path(channel, name, content_type) do
+      {:error, e} -> {:error, e}
+      path ->
         cond do
           is_list(Toolkit.config(:allowed_emote_content_types))
           and not Enum.member?(Toolkit.config(:allowed_emote_content_types), content_type) ->
             {:bad_content_type, Toolkit.config(:allowed_emote_content_types)}
-        payload == nil or payload == "" ->
+          payload == nil or payload == "" ->
             delete(channel, name)
             :ok
-        true ->
-            path = directory <> file_path(channel, name, content_type)
+          Toolkit.config(:max_emotes_per_channel) <= Enum.count(File.ls(Path.dirname(path))) ->
+            :too_many_emotes
+          true ->
             payload = Base.decode64!(payload)
             if Toolkit.config(:max_emote_size) < byte_size(payload) do
               :too_large
@@ -74,9 +75,9 @@ defmodule Emote do
   end
 
   def clear(channel) do
-    case Toolkit.config!(:emote_directory) do
-      nil -> {:error, "Disabled."}
-      directory -> File.rm_rf("#{directory}/#{String.downcase(channel)}/")
+    case file_path(channel) do
+      {:error, e} -> {:error, e}
+      directory -> File.rm_rf(directory)
     end
   end
 
@@ -94,9 +95,20 @@ defmodule Emote do
         nil
     end
   end
+
+  defp file_path(channel) do
+    case Toolkit.config!(:emote_directory) do
+      nil -> {:error, "Disabled."}
+      dir -> dir <> "/#{String.downcase(channel)}/"
+    end
+  end
   
   defp file_path(channel, name, content_type) do
-    [ ext | _ ] = MIME.extensions(content_type)
-    "/#{String.downcase(channel)}/#{String.downcase(name)}.#{ext}"
+    case Toolkit.config!(:emote_directory) do
+      nil -> {:error, "Disabled."}
+      dir ->
+        [ ext | _ ] = MIME.extensions(content_type)
+        dir <> "/#{String.downcase(channel)}/#{String.downcase(name)}.#{ext}"
+    end
   end
 end

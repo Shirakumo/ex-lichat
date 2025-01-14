@@ -5,7 +5,7 @@ defupdate(Destroy, "DESTROY", [:channel]) do
     case Channel.get(type.channel) do
       {:ok, channel} ->
         Logger.info("#{update.from} destroyed #{type.channel}", [intent: :admin])
-        History.ip_log(state, Update.Destroy, type.channel)
+        IpLog.record(state, Update.Destroy, type.channel)
         Channel.destroy(channel)
         Lichat.Connection.write(state, update)
       :error ->

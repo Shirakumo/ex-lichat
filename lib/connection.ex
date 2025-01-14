@@ -277,7 +277,7 @@ defmodule Lichat.Connection do
         {:ok, state} ->
           if Blacklist.has?(state.ip) do
             log(state, "Connection from denied: on blacklist")
-            History.ip_log(state, Update.TooManyConnections)
+            IpLog.record(state, Update.TooManyConnections)
             %{state | type: nil}
           else
             log(state, "New #{inspect(module)} connection")
@@ -316,7 +316,7 @@ defmodule Lichat.Connection do
     state = %{state | extensions: (if update.type.extensions == nil, do: [], else: MapSet.new(update.type.extensions))}
     primary = Lichat.server_name()
     user = User.connect(User.ensure_user(update.from), self())
-    History.ip_log(state, Update.Connect)
+    IpLog.record(state, Update.Connect)
     write(state, Update.reply(update, Update.Connect, [
               from: update.from,
               version: Lichat.version(),
@@ -341,7 +341,7 @@ defmodule Lichat.Connection do
   end
 
   def shutdown(state) do
-    History.ip_log(state, Update.Disconnect)
+    IpLog.record(state, Update.Disconnect)
     if state.ssl do
       :ssl.shutdown(state.socket, :write)
     else

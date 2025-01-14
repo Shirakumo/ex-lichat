@@ -3,7 +3,7 @@ defupdate(Unblock, "UNBLOCK", [:target]) do
   def handle(type, update, state) do
     case Profile.lookup(update.from) do
       :ok ->
-        History.ip_log(state, Update.Unblock, type.target)
+        IpLog.record(state, Update.Unblock, type.target)
         User.unblock(update.from, type.target)
         Profile.unblock(update.from, type.target)
         Lichat.Connection.write(state, update)

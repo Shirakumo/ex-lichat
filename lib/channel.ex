@@ -178,11 +178,7 @@ defmodule Channel do
     case Registry.lookup(Channel, String.downcase(channel.name)) do
       [] ->
         {:ok, pid} = Channels.start_child([channel])
-        case History.create(channel.name) do
-          {:error, :not_connected} -> nil
-          {:error, error} -> Logger.error("Failed to create channel entry for #{channel.name}: #{inspect(error)}")
-          _ -> nil
-        end
+        Sql.create_channel(channel)
         Logger.info("New channel #{channel.name} at #{inspect(pid)}")
         {:new, pid}
       [{pid, _}] ->

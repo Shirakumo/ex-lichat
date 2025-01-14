@@ -5,7 +5,7 @@ defupdate(Deny, "DENY", [:channel, :update, :target]) do
     case Channel.get(type.channel) do
       {:ok, channel} ->
         Logger.info("#{update.from} denied #{inspect(type.update)} for #{type.target} in #{type.channel}", [intent: :user])
-        History.ip_log(state, Update.Permissions, type.channel)
+        IpLog.record(state, Update.Permissions, type.channel)
         Channel.deny(channel, type.target, type.update)
         Lichat.Connection.write(state, update)
       :error ->

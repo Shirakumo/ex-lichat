@@ -19,7 +19,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
             Lichat.Connection.close(connection)
           Blacklist.has?(update.from) ->
             Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: name on blacklist")
-            History.ip_log(connection, Update.TooManyConnections)
+            IpLog.record(connection, Update.TooManyConnections)
             Lichat.Connection.write(connection, Update.fail(update, Update.TooManyConnections))
             Lichat.Connection.close(connection)
           true ->
@@ -27,12 +27,12 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
               :not_registered ->
                 cond do
                   is_binary(type.password) ->
-                    History.ip_log(connection, Update.NoSuchProfile)
+                    IpLog.record(connection, Update.NoSuchProfile)
                     Lichat.Connection.write(connection, Update.fail(update, Update.NoSuchProfile,
                         [text: "No such profile with name #{update.from}"]))
                     Lichat.Connection.close(connection)
                   User.get(update.from) != :error ->
-                    History.ip_log(connection, Update.UsernameTaken)
+                    IpLog.record(connection, Update.UsernameTaken)
                     Lichat.Connection.write(connection, Update.fail(update, Update.UsernameTaken,
                         [text: "The username is already taken: #{update.from}"]))
                     Lichat.Connection.close(connection)
@@ -41,7 +41,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                 end
               :bad_password ->
                 Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: invalid password")
-                History.ip_log(connection, Update.InvalidPassword)
+                IpLog.record(connection, Update.InvalidPassword)
                 Lichat.Connection.write(connection, Update.fail(update, Update.InvalidPassword,
                       [text: "The given password is invalid for #{update.from}"]))
                 Lichat.Connection.close(connection)
@@ -54,7 +54,7 @@ defupdate(Connect, "CONNECT", [[:password, required: false], :version, [:extensi
                       Lichat.Connection.establish(connection, update)
                     else
                       Logger.info("Connection from #{update.from} at #{Toolkit.ip(connection.ip)} denied: too many connections")
-                      History.ip_log(connection, Update.TooManyConnections)
+                      IpLog.record(connection, Update.TooManyConnections)
                       Lichat.Connection.write(connection, Update.fail(update, Update.TooManyConnections))
                       Lichat.Connection.close(connection)
                     end

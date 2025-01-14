@@ -14,7 +14,7 @@ defupdate(SetUserInfo, "SET-USER-INFO", [:key, :text]) do
           true ->
             Logger.info("#{update.from} set #{inspect(type.key)} for themselves.", [intent: :user])
             try do
-              History.ip_log(state, Update.SetUserInfo)
+              IpLog.record(state, Update.SetUserInfo)
               Profile.info(update.from, type.key, type.text)
               Lichat.Connection.write(state, update)
             rescue

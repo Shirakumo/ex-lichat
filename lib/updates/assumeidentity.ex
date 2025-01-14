@@ -6,7 +6,7 @@ defupdate(AssumeIdentity, "ASSUME-IDENTITY", [:target, :key]) do
     else
       case User.assume(type.target, type.key) do
         {:ok, user} ->
-          History.ip_log(state, Update.AssumeIdentity, type.target)
+          IpLog.record(state, Update.AssumeIdentity, type.target)
           identities = state.identities
           |> Map.put(type.target, user)
           |> Map.put(user, {type.target, Process.monitor(user)})

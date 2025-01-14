@@ -1,6 +1,6 @@
 defmodule IpLog do
-  def ip_log(connection, action, target \\ nil) do
-    Sql.with_connection(fn ->
+  def record(connection, action, target \\ nil) do
+    Sql.with_db(fn ->
       Sql.Query.ip_log(
         ip: Toolkit.ip(connection.ip),
         clock: Toolkit.universal_time(),
@@ -10,10 +10,10 @@ defmodule IpLog do
     end)
   end
 
-  def ip_search(ip \\ nil, opts \\ [])
+  def search(ip \\ nil, opts \\ [])
   
-  def ip_search(ip, opts) do
-    Sql.with_connection(fn ->
+  def search(ip, opts) do
+    Sql.with_db(fn ->
       map_ip_result(Sql.Query.ip_search(
             ip: if(is_nil(ip), do: nil, else: Toolkit.ip(ip)),
             from: Keyword.get(opts, :from, nil),
