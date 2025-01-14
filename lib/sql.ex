@@ -1,7 +1,7 @@
 defmodule Sql do
   require Logger
   defmodule Query do
-    use AyeSQL
+    use AyeSQL, runner: AyeSQL.Runner.Postgrex, conn: Sql
     defqueries("sql/channel.sql")
     defqueries("sql/connection.sql")
     defqueries("sql/history.sql")
@@ -132,24 +132,24 @@ defmodule Sql do
   end
 
   defp create_tables() do
-    [&Query.create_channels_table/1,
-     &Query.create_channel_members_table/1,
-     &Query.create_connections_table/1,
-     &Query.create_connections_ip_index/1,
-     &Query.create_connections_user_index/1,
-     &Query.create_history_table/1,
-     &Query.create_history_text_index/1,
-     &Query.create_history_user_index/1,
-     &Query.create_history_channel_index/1,
-     &Query.create_ip_log_table/1,
-     &Query.create_ip_log_ip_index/1,
-     &Query.create_ip_log_user_index/1,
-     &Query.create_ip_log_action_index/1,
-     &Query.create_users_table/1]
-     |> Enum.map(&(&1.()))
-     |> Enum.all?(fn {x, _} -> x == :ok end)
+    with {:ok, _} <- Query.create_users_table([]),
+         {:ok, _} <- Query.create_channels_table([]),
+         {:ok, _} <- Query.create_channel_members_table([]),
+         {:ok, _} <- Query.create_connections_table([]),
+         {:ok, _} <- Query.create_connections_ip_index([]),
+         {:ok, _} <- Query.create_connections_user_index([]),
+         {:ok, _} <- Query.create_history_table([]),
+         {:ok, _} <- Query.create_history_text_index([]),
+         {:ok, _} <- Query.create_history_user_index([]),
+         {:ok, _} <- Query.create_history_channel_index([]),
+         {:ok, _} <- Query.create_ip_log_table([]),
+         {:ok, _} <- Query.create_ip_log_ip_index([]),
+         {:ok, _} <- Query.create_ip_log_user_index([]),
+         {:ok, _} <- Query.create_ip_log_action_index([]) do
+      :ok
+    end
   end
-  
+                                                  
   defp handle_create(response) do
     case response do
       %Postgrex.Error{message: _, postgres: detail, connection_id: _, query: _} ->

@@ -3,8 +3,8 @@ CREATE TABLE IF NOT EXISTS "lichat-channels"(
   "id" INT GENERATED ALWAYS AS IDENTITY,
   "name" VARCHAR(32) NOT NULL,
   "registrant" INT NOT NULL,
-  "lifetime" INT NOT NULL,
-  "expiry" INT NOT NULL,
+  "lifetime" INT,
+  "expiry" INT,
   PRIMARY KEY("id"),
   UNIQUE("name")
 );
@@ -15,15 +15,19 @@ CREATE TABLE IF NOT EXISTS "lichat-channel-members"(
   "user" INT NOT NULL,
   PRIMARY KEY("channel", "user"),
   CONSTRAINT "channel" FOREIGN KEY("channel") REFERENCES "lichat-channels"("id") ON DELETE CASCADE,
-  CONSTRAINT "user" FOREIGN KEY("user") REFERENCES "lichat-users"("id") ON DELETE CASCADE,
+  CONSTRAINT "user" FOREIGN KEY("user") REFERENCES "lichat-users"("id") ON DELETE CASCADE
 );
 
 -- name: create_channel
 INSERT INTO "lichat-channels"("name", "registrant", "lifetime", "expiry")
-VALUES(:name, :registrant, :lifetime, :expiry);
+VALUES(
+    :name,
+    (SELECT "id" FROM "lichat-users" WHERE "name"=:registrant),
+    :lifetime,
+    :expiry);
 
 -- name: delete_channel
-DELETE FROM "lichat-channels" 
+DELETE FROM "lichat-channels"
  WHERE "name" = :name;
 
 -- name: find_channel
