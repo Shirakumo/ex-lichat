@@ -27,7 +27,7 @@ defmodule Server do
     {:ok, socket} = :gen_tcp.listen(port, tcp_options(ip))
     Logger.info("Accepting connections on port #{inspect(ip)}:#{port}")
     Enum.map(1..acceptors, fn (i) ->
-      Supervisor.child_spec({Task, fn -> accept(supervisor, socket) end}, id: {Task, i})
+      Supervisor.child_spec({Task, fn -> accept(supervisor, socket) end}, id: {Task, i}, restart: :permanent)
     end)
   end
 
@@ -35,21 +35,37 @@ defmodule Server do
     {:ok, socket} = :ssl.listen(port, tcp_options(ip) ++ ssl_opts)
     Logger.info("Accepting SSL connections on port #{inspect(ip)}:#{port}")
     Enum.map(1..acceptors, fn (i) ->
-      Supervisor.child_spec({Task, fn -> accept_ssl(supervisor, socket) end}, id: {Task, 1000+i})
+      Supervisor.child_spec({Task, fn -> accept_ssl(supervisor, socket) end}, id: {Task, 1000+i}, restart: :permanent)
     end)
   end
   
   defp accept(supervisor, socket) do
-    {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Lichat.Connection, [socket: client, ssl: false]})
-    :gen_tcp.controlling_process(client, pid)
+    case :gen_tcp.accept(socket) do
+      {:ok, client} ->
+        case DynamicSupervisor.start_child(supervisor, {Lichat.Connection, [socket: client, ssl: false]}) do
+          {:ok, pid} ->
+            :gen_tcp.controlling_process(client, pid)
+          {:error, error} ->
+            Logger.error("Failed to start child for #{inspect(socket)}: #{inspect(error)}")
+        end
+      {:error, error} ->
+        Logger.error("Failed to accept #{inspect(socket)}: #{inspect(error)}")
+    end
     accept(supervisor, socket)
   end
 
   defp accept_ssl(supervisor, socket) do
-    {:ok, client} = :ssl.transport_accept(socket)
-    {:ok, pid} = DynamicSupervisor.start_child(supervisor, {Lichat.Connection, [socket: client, ssl: true]})
-    :ssl.controlling_process(client, pid)
+    case :ssl.transport_accept(socket) do
+      {:ok, client} ->
+        case DynamicSupervisor.start_child(supervisor, {Lichat.Connection, [socket: client, ssl: true]}) do
+          {:ok, pid}  ->
+            :ssl.controlling_process(client, pid)
+          {:error, error} ->
+            Logger.error("Failed to start child for #{inspect(socket)}: #{inspect(error)}")
+        end
+      {:error, error} ->
+        Logger.error("Failed to accept #{inspect(socket)}: #{inspect(error)}")
+    end
     accept_ssl(supervisor, socket)
   end
 end
