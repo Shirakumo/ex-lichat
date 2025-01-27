@@ -110,14 +110,6 @@ defmodule Sql do
     end)
   end
 
-  def with_db(f) do
-    if Process.whereis(Sql) != nil do
-      f.()
-    else
-      {:error, :not_connected}
-    end
-  end
-
   def with_db(faillog, f) do
     if Process.whereis(Sql) != nil do
       case f.() do
@@ -129,6 +121,10 @@ defmodule Sql do
     else
       {:error, :not_connected}
     end
+  end
+
+  def with_db(f) do
+    with_db("Query failed", f)
   end
 
   defp create_tables() do
@@ -152,11 +148,7 @@ defmodule Sql do
                                                   
   defp ignore_unique(response) do
     case response do
-      %Postgrex.Error{postgres: detail} ->
-        case detail.code do
-          :unique_violation -> :ok
-          _ -> {:error, detail}
-        end
+      {:error, %Postgrex.Error{postgres: %{code: :unique_violation}}} -> :ok
       result -> result
     end
   end
