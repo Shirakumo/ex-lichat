@@ -37,11 +37,11 @@ defmodule Sql do
   
   def create_channel(channel) do
     with_db("Failed to create channel #{channel.name}", fn ->
-      ignore_unique(Query.create_channel(
-            name: channel.name,
-            registrant: channel.registrant,
-            lifetime: channel.lifetime,
-            expiry: channel.expiry))
+      Query.create_channel(
+        name: channel.name,
+        registrant: channel.registrant,
+        lifetime: channel.lifetime,
+        expiry: channel.expiry)
     end)
   end
 
@@ -53,10 +53,10 @@ defmodule Sql do
   
   def create_user(user) do
     with_db("Failed to create user #{user.name}", fn ->
-      ignore_unique(Query.create_user(
-            name: user.name,
-            registered: Profile.registered?(user.name),
-            created_on: Toolkit.universal_time()))
+      Query.create_user(
+        name: user.name,
+        registered: Profile.registered?(user.name),
+        created_on: Toolkit.universal_time())
     end)
   end
 
@@ -74,7 +74,7 @@ defmodule Sql do
 
   def join_channel(channel, user) do
     with_db("Failed to join user #{user} to #{channel}", fn ->
-      ignore_unique(Query.join_channel(channel: channel, user: user))
+      Query.join_channel(channel: channel, user: user)
     end)
   end
 
@@ -143,13 +143,6 @@ defmodule Sql do
          {:ok, _} <- Query.create_ip_log_user_index([]),
          {:ok, _} <- Query.create_ip_log_action_index([]) do
       :ok
-    end
-  end
-                                                  
-  defp ignore_unique(response) do
-    case response do
-      {:error, %Postgrex.Error{postgres: %{code: :unique_violation}}} -> :ok
-      result -> result
     end
   end
 end

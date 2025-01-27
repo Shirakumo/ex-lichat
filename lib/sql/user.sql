@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS "lichat-users"(
 -- name: create_user
 INSERT INTO "lichat-users"("name", "registered", "created-on", "last-connected")
 VALUES(:name, :registered, :created_on, 0)
-ON CONFLICT("name") DO UPDATE 
-  SET "created-on" = :created_on;
+       ON CONFLICT("name") DO UPDATE 
+       SET "created-on" = :created_on;
 
 -- name: delete_user
 DELETE FROM "lichat-users" 

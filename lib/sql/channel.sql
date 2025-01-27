@@ -24,7 +24,10 @@ VALUES(
     :name,
     (SELECT "id" FROM "lichat-users" WHERE "name"=:registrant),
     :lifetime,
-    :expiry);
+    :expiry)
+  ON CONFLICT("name") DO UPDATE
+  SET "lifetime" = :lifetime,
+  "expiry" = :expiry;
 
 -- name: delete_channel
 DELETE FROM "lichat-channels"
@@ -49,7 +52,8 @@ SELECT U.*
 INSERT INTO "lichat-channel-members"("channel", "user")
 SELECT C."id", U."id" FROM "lichat-channels" AS C, "lichat-users" AS U
  WHERE C."name" = :channel
-   AND U."name" = :user;
+   AND U."name" = :user
+ON CONFLICT("channel", "user") DO NOTHING;
 
 -- name: leave_channel
 DELETE FROM "lichat-channel-members"
