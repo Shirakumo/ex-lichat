@@ -2,9 +2,9 @@ defmodule History do
   def limit, do: 100
 
   def record(update) do
-    Sql.with_db("Failed to record update", fn ->
-      case update.type.__struct__ do
-        Update.React ->
+    case update.type.__struct__ do
+      Update.React ->
+        Sql.with_db("Failed to record update", fn ->
           Sql.Query.history_record(
             id: to_string(update.id),
             clock: update.clock,
@@ -14,11 +14,13 @@ defmodule History do
             text: update.type.emote,
             rich: update.type.target <> "  " <> to_string(update.type.update_id),
             markup: "text/x-lichat-reaction")
-        Update.Message ->
-          rich = case Map.get(update.type, :rich) do
-                   nil -> nil
-                   x -> WireFormat.print1(x)
-                 end
+        end)
+      Update.Message ->
+        rich = case Map.get(update.type, :rich) do
+                 nil -> nil
+                 x -> WireFormat.print1(x)
+               end
+        Sql.with_db("Failed to record update", fn ->
           Sql.Query.history_record(
             id: to_string(update.id),
             clock: update.clock,
@@ -32,9 +34,10 @@ defmodule History do
             else
               "text/shirakumo-lichat-markup"
             end)
-          _ -> {:error, :unsupported_update_type}
-      end
-    end)
+          end)
+      _ -> {:error, {:unsupported_update_type, update.type.__struct__}}
+    end
+    
   end
 
   def clear(channel) do

@@ -5,7 +5,7 @@ defmodule IpLog do
         ip: Toolkit.ip(connection.ip),
         clock: Toolkit.universal_time(),
         action: action_id(action),
-        from: connection.name,
+        user: connection.name,
         target: target)
     end)
   end
@@ -16,7 +16,7 @@ defmodule IpLog do
     Sql.with_db(fn ->
       map_ip_result(Sql.Query.ip_search(
             ip: if(is_nil(ip), do: nil, else: Toolkit.ip(ip)),
-            from: Keyword.get(opts, :from, nil),
+            user: Keyword.get(opts, :from, nil),
             action: action_id(Keyword.get(opts, :action, Update)),
             limit: Keyword.get(opts, :count, 100),
             offset: Keyword.get(opts, :start, 0)))

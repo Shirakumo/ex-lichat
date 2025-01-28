@@ -30,7 +30,8 @@ VALUES (:id,
         (SELECT "id" FROM "lichat-channels" WHERE "name" = :channel),
         :text,
         :rich,
-        :markup);
+        :markup)
+       RETURNING ("id");
 
 -- name: history_clear
 DELETE FROM "lichat-history" AS H
@@ -40,7 +41,7 @@ WHERE "channel" IN (SELECT "id" FROM (:find_channel))
 SELECT * FROM (
   SELECT H.*, U."name" AS "from"
     FROM "lichat-history" AS H
-         LEFT JOIN "lichat-channels" AS C ON C."id" = H."channel",
+         LEFT JOIN "lichat-channels" AS C ON C."id" = H."channel"
          LEFT JOIN "lichat-users" AS U ON U."id" = H."user"
    WHERE C."name" = :channel
      AND :since <= H."clock"
@@ -51,7 +52,7 @@ SELECT * FROM (
 -- name: history_search
 SELECT H.*, U."name" AS "from"
   FROM "lichat-history" AS H
-       LEFT JOIN "lichat-channels" AS C ON C."id" = H."channel",
+       LEFT JOIN "lichat-channels" AS C ON C."id" = H."channel"
        LEFT JOIN "lichat-users" AS U ON U."id" = H."user"
  WHERE C."name" = :channel
    AND (:from::text IS NULL OR U."name" ~ :from)

@@ -11,7 +11,7 @@ defupdate(Capabilities, "CAPABILITIES", [:channel, [:permitted, required: false]
           and Map.get(map, user, Map.get(map, :default, false))
         end)
         |> Enum.map(fn {type, _map} ->
-          type.type_symbol
+          type.type_symbol()
         end)
         Lichat.Connection.write(state, %{update | type: %{type | permitted: permitted}})
     end

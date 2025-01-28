@@ -18,7 +18,14 @@ CREATE INDEX IF NOT EXISTS "lichat-connections.user" ON "lichat-connections"("us
 
 -- name: create_connection
 INSERT INTO "lichat-connections"("ip", "ssl", "user", "last-update", "started-on")
-VALUES(:ip, :ssl, :user, :last_update, :started_on);
+VALUES(:ip,
+       :ssl,
+       CASE :user WHEN NULL THEN NULL
+       ELSE (SELECT "id" FROM "lichat-users" WHERE "name" = :user)
+       END,
+       :last_update,
+       :started_on)
+       RETURNING ("id");
 
 -- name: delete_connection
 DELETE FROM "lichat-connections" 
@@ -26,12 +33,12 @@ DELETE FROM "lichat-connections"
 
 -- name: associate_connection
 UPDATE "lichat-connections"
-   SET "user" = :user
+   SET "user" = (SELECT "id" FROM "lichat-users" WHERE "name" = :user)
  WHERE "id" = :id;
 
 -- name: update_connection
 UPDATE "lichat-connections"
-   SET "last_update" = :last_update
+   SET "last-update" = :last_update
  WHERE "id" = :id;
 
 -- name: ip_connections
@@ -43,3 +50,6 @@ SELECT * FROM "lichat-connections"
 SELECT * FROM "lichat-connections"
  WHERE "user" IN (SELECT "id" FROM (:find_user))
  ORDER BY "started-on" DESC;
+
+-- name: clear_connections
+TRUNCATE TABLE "lichat-connections";

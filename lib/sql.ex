@@ -87,12 +87,12 @@ defmodule Sql do
   def create_connection(connection) do
     with_db("Failed to create connection #{Lichat.Connection.describe(connection)}", fn ->
       case Query.create_connection(
-            ip: connection.ip,
+            ip: Toolkit.ip(connection.ip),
             ssl: connection.ssl,
             user: connection.name,
             last_update: connection.last_update,
             started_on: connection.started_on) do
-        {:ok, ok} -> ok
+        {:ok, [%{id: x}]} -> x
         x -> x
       end
     end)
@@ -107,6 +107,12 @@ defmodule Sql do
   def update_connection(connection, last_update \\ Toolkit.universal_time()) do
     with_db("Failed to update connection #{Lichat.Connection.describe(connection)}", fn ->
       Query.update_connection(id: connection.sql_id, last_update: last_update)
+    end)
+  end
+
+  def clear_connections() do
+    with_db("Failed to clear connections", fn ->
+      Query.clear_connections([])
     end)
   end
 

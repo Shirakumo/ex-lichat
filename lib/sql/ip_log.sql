@@ -20,18 +20,23 @@ CREATE INDEX IF NOT EXISTS "lichat-ip-log.user" ON "lichat-ip-log"("user");
 CREATE INDEX IF NOT EXISTS "lichat-ip-log.action" ON "lichat-ip-log"("action");
 
 -- name: ip_log
-INSERT INTO "lichat-ip-log"("ip", "clock", "action", "from", "target")
+INSERT INTO "lichat-ip-log"("ip", "clock", "action", "user", "target")
 VALUES (:ip,
         :clock,
         :action,
-        :from,
-        :target);
+        CASE :user WHEN NULL THEN NULL
+        ELSE (SELECT "id" FROM "lichat-users" WHERE "name" = :user)
+        END,
+        :target)
+       RETURNING ("id");
 
 -- name: ip_search
-SELECT * FROM "lichat-ip-log"
- WHERE (:ip::text IS NULL OR "ip" = :ip)
-   AND (:from::text IS NULL OR "from" = :from)
-   AND (:action::int IS NULL OR "action" = :action)
- ORDER BY "clock" DESC
+SELECT I.*, U."name" AS "from"
+  FROM "lichat-ip-log" AS I LEFT JOIN
+       "lichat-users" AS U ON U.id = I.user
+ WHERE (:ip::text IS NULL OR I."ip" = :ip)
+   AND (:user::text IS NULL OR I."user" = :user)
+   AND (:action::int IS NULL OR I."action" = :action)
+ ORDER BY I."clock" DESC
  LIMIT :limit
 OFFSET :offset;

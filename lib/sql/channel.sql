@@ -27,7 +27,8 @@ VALUES(
     :expiry)
   ON CONFLICT("name") DO UPDATE
   SET "lifetime" = :lifetime,
-  "expiry" = :expiry;
+  "expiry" = :expiry
+  RETURNING ("id");
 
 -- name: delete_channel
 DELETE FROM "lichat-channels"

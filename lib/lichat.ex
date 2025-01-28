@@ -40,6 +40,8 @@ defmodule Lichat do
 
     opts = [strategy: :one_for_one, name: Lichat.Supervisor]
     pid = Supervisor.start_link(children, opts)
+
+    Sql.clear_connections()
     
     System.at_exit(fn _ ->
       notify("Server shutting down...")
