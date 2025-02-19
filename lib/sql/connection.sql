@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "lichat-connections"(
 );
 
 -- name: create_connections_ip_index
-CREATE INDEX IF NOT EXISTS "lichat-connections.ip" ON "lichat-connections"("ip");
+CREATE INDEX IF NOT EXISTS "lichat-connections.ip" ON "lichat-connections"("ip" varchar_pattern_ops);
 
 -- name: create_connections_user_index
 CREATE INDEX IF NOT EXISTS "lichat-connections.user" ON "lichat-connections"("user");

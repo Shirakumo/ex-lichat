@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "lichat-ip-log"(
 );
 
 -- name: create_ip_log_ip_index
-CREATE INDEX IF NOT EXISTS "lichat-ip-log.ip" ON "lichat-ip-log"("ip");
+CREATE INDEX IF NOT EXISTS "lichat-ip-log.ip" ON "lichat-ip-log"("ip" varchar_pattern_ops);
 
 -- name: create_ip_log_user_index
 CREATE INDEX IF NOT EXISTS "lichat-ip-log.user" ON "lichat-ip-log"("user");

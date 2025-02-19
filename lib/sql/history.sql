@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "lichat-history"(
 );
 
 -- name: create_history_text_index
-CREATE INDEX IF NOT EXISTS "lichat-history.text" ON "lichat-history"("text");
+CREATE INDEX IF NOT EXISTS "lichat-history.text" ON "lichat-history"("text" text_pattern_ops);
 
 -- name: create_history_user_index
 CREATE INDEX IF NOT EXISTS "lichat-history.user" ON "lichat-history"("user");

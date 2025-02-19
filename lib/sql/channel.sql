@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS "lichat-channels"(
   "lifetime" INT,
   "expiry" INT,
   PRIMARY KEY("id"),
-  UNIQUE("name")
+  UNIQUE(LOWER("name"))
 );
 
 -- name: create_channel_members_table
@@ -25,18 +25,18 @@ VALUES(
     (SELECT "id" FROM "lichat-users" WHERE "name"=:registrant),
     :lifetime,
     :expiry)
-  ON CONFLICT("name") DO UPDATE
+  ON CONFLICT(LOWER("name")) DO UPDATE
   SET "lifetime" = :lifetime,
   "expiry" = :expiry
   RETURNING ("id");
 
 -- name: delete_channel
 DELETE FROM "lichat-channels"
- WHERE "name" = :name;
+ WHERE LOWER("name") = LOWER(:name);
 
 -- name: find_channel
 SELECT * FROM "lichat-channels"
- WHERE "name" = :name;
+ WHERE LOWER("name") = LOWER(:name);
 
 -- name: list_channels
 SELECT * FROM "lichat-channels"
@@ -46,17 +46,20 @@ SELECT * FROM "lichat-channels"
 SELECT U.*
   FROM "lichat-users" AS U
        LEFT JOIN "lichat-channel-members" AS M ON M."user" = U."id"
- WHERE M."channel" IN (SELECT "id" FROM "lichat-channels" WHERE "name" = :channel)
+ WHERE M."channel" IN (SELECT "id" FROM "lichat-channels"
+                        WHERE LOWER("name") = LOWER(:channel))
  ORDER BY "name" ASC;
 
 -- name: join_channel
 INSERT INTO "lichat-channel-members"("channel", "user")
 SELECT C."id", U."id" FROM "lichat-channels" AS C, "lichat-users" AS U
- WHERE C."name" = :channel
-   AND U."name" = :user
+ WHERE LOWER(C."name") = LOWER(:channel)
+   AND LOWER(U."name") = LOWER(:user)
 ON CONFLICT("channel", "user") DO NOTHING;
 
 -- name: leave_channel
 DELETE FROM "lichat-channel-members"
- WHERE "channel" IN (SELECT "id" FROM "lichat-channels" WHERE "name" = :channel)
-   AND "user" IN (SELECT "id" FROM "lichat-users" WHERE "name" = :user);
+ WHERE "channel" IN (SELECT "id" FROM "lichat-channels"
+                      WHERE LOWER("name") = LOWER(:channel))
+   AND "user" IN (SELECT "id" FROM "lichat-users"
+                   WHERE LOWER("name") = LOWER(:user));
