@@ -1,12 +1,12 @@
 # ExLichat
-This is an implementation of a "Lichat"(https://shirakumo.github.io/lichat) server in Elixir, providing a very robust, scalable, and extensible chat server implementation.
+This is an implementation of a "Lichat"(https://shirakumo.org/docs/lichat) server in Elixir, providing a very robust, scalable, and extensible chat server implementation.
 
 ## Running a Development Server
 Setting up a Lichat server is very simple.
 
 ::
 pacman -S elixir
-git clone https://github.com/shirakumo/ex-lichat
+git clone https://shirakumo.org/project/ex-lichat
 cd ex-lichat
 mix deps.get
 iex -S mix
@@ -15,7 +15,7 @@ iex -S mix
 You can configure and override settings from the ''config''(config/runtime.exs) in the ``config/secret.exs`` file.
 
 ## Running a Production Server
-Download the latest ''release''(https://github.com/shirakumo/ex-lichat/releases/latest) tarball and extract it to somewhere on your server. We highly recommend creating a custom user for it as well. You can then use the ``bin/lichat help`` command to get information about what you can do to the server.
+Download the latest ''release''(https://shirakumo.org/project/ex-lichat/releases/latest) tarball and extract it to somewhere on your server. We highly recommend creating a custom user for it as well. You can then use the ``bin/lichat help`` command to get information about what you can do to the server.
 
 If you use Systemd, the distribution also includes a ``lichat.service`` file for you. It assumes that you created a user called ``lichat`` and that you extracted the release package to their home directory at ``/home/lichat``. You can then install the service to systemd with
 

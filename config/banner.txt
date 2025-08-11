@@ -15,13 +15,13 @@ You are connecting to a Lichat server,
 welcome! For more information on Lichat
 head on over to
 
-  https://shirakumo.github.io/lichat
+  https://shirakumo.org/docs/lichat
 
 This server is running on ExLichat,
 the premier open-source Lichat server!
 ExLichat can be found on GitHub:
 
-  https://github.com/shirakumo/ex-lichat
+  https://shirakumo.org/project/ex-lichat
 
 For contact information of this server,
 please consult the primary channel's
